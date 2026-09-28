@@ -17,7 +17,7 @@ test('desktop tree, tab switching, locked prerequisites, and mobile layout',asyn
 test('guided demo earns Bronze, persists, unlocks next skill, and does not affect live profile',async({page})=>{
   await page.goto('/');await page.clock.install();
   await page.getByRole('button',{name:/Play your first lesson/}).click();await page.locator('#begin').click();
-  await page.clock.runFor(3100);
+  await page.clock.runFor(4100);
   for(let i=0;i<12;i++){await page.keyboard.press('Space');await page.clock.runFor(200);}
   await expect(page.getByRole('heading',{name:'Bronze earned.'})).toBeVisible();await expect(page.locator('.accuracy')).toHaveText('100%');
   await page.locator('#result-done').click();await page.reload();
@@ -28,11 +28,11 @@ test('guided demo earns Bronze, persists, unlocks next skill, and does not affec
 });
 
 test('wrong guided notes fail the gate, flow misses finish, and no XP is awarded',async({page})=>{
-  await page.goto('/');await page.clock.install();await page.locator('#continue').click();await page.locator('#begin').click();await page.clock.runFor(3100);
+  await page.goto('/');await page.clock.install();await page.locator('#continue').click();await page.locator('#begin').click();await page.clock.runFor(4100);
   for(let i=0;i<12;i++){await page.keyboard.press('x');await page.clock.runFor(200);await page.keyboard.press('Space');await page.clock.runFor(200);}
   await expect(page.locator('.accuracy')).toHaveText('50%');await expect(page.getByRole('heading',{name:'Every attempt is practice.'})).toBeVisible();
   await page.locator('#result-done').click();await expect(page.locator('#xp-label')).toHaveText('✦ 0 XP');
-  await page.locator('[data-page="library"]').click();await page.locator('[data-library="tabs-4"]').click();await page.locator('[data-rule="1"]').click();await page.locator('#begin').click();await page.clock.runFor(25000);
+  await page.locator('[data-page="library"]').click();await page.locator('[data-library="tabs-4"]').click();await page.locator('[data-rule="1"]').click();await page.locator('#adaptive-enabled').uncheck();await page.locator('#begin').click();await page.clock.runFor(25000);
   await expect(page.locator('.accuracy')).toHaveText('0%');
 });
 
@@ -49,7 +49,7 @@ test('library pack import validates metadata and renders untrusted titles as tex
 test('Diamond battle applies equipped bonuses and awards mastery only on a win',async({page})=>{
   await page.addInitScript(()=>localStorage.setItem('irig-demo',JSON.stringify({version:1,skills:{'tabs-0':3,'chords-0':3},xp:1200,sessions:6,history:[]})));
   await page.goto('/#arena');await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.clock.pauseAt(new Date('2026-01-01T00:00:01Z'));await page.locator('#battle').click();await page.locator('#begin').click();
-  await page.clock.runFor(3000);await page.keyboard.press('Space');
+  await page.clock.runFor(2400);await page.keyboard.press('Space');
   for(let i=1;i<12;i++){await page.clock.runFor(600);await page.keyboard.press('Space');}
   await page.clock.runFor(50);await expect(page.getByRole('heading',{name:'Diamond earned.'})).toBeVisible();
   await expect(page.locator('.result')).toContainText('1060');await expect(page.locator('.result')).toContainText('940');

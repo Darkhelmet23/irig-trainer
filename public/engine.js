@@ -6,7 +6,7 @@ export function sanitizeProfile(raw) {
   for (const s of SKILLS) { const t=raw.skills?.[s.id]; if (Number.isInteger(t) && t>=0 && t<=4 && (!s.requires || p.skills[s.requires]>=1)) p.skills[s.id]=t; }
   p.xp=Number.isFinite(raw.xp)?Math.max(0,Math.min(1e9,raw.xp)):0;
   p.sessions=Number.isInteger(raw.sessions)?Math.max(0,raw.sessions):0;
-  p.history=Array.isArray(raw.history)?raw.history.filter(h=>h&&typeof h.title==='string'&&typeof h.rank==='string'&&Number.isFinite(h.accuracy)).slice(0,20).map(h=>({title:h.title.slice(0,100),rank:h.rank.slice(0,20),accuracy:Math.max(0,Math.min(100,h.accuracy)),passed:h.passed===true})):[];
+  p.history=Array.isArray(raw.history)?raw.history.filter(h=>h&&typeof h.title==='string'&&typeof h.rank==='string'&&Number.isFinite(h.accuracy)).slice(0,200).map(h=>({title:h.title.slice(0,100),rank:h.rank.slice(0,20),accuracy:Math.max(0,Math.min(100,h.accuracy)),passed:h.passed===true,at:Number.isFinite(h.at)?h.at:0,bpm:Number.isFinite(h.bpm)?h.bpm:0,speed:Number.isFinite(h.speed)?h.speed:1,hits:Number.isFinite(h.hits)?h.hits:0,total:Number.isFinite(h.total)?h.total:0,durationMs:Number.isFinite(h.durationMs)?h.durationMs:0,targets:Array.isArray(h.targets)?h.targets.filter(t=>t&&typeof t.key==='string'&&typeof t.label==='string').slice(0,256).map(t=>({key:t.key.slice(0,64),label:t.label.slice(0,64),kind:typeof t.kind==='string'?t.kind:'note',hit:t.hit===true,string:Number.isInteger(t.string)&&t.string>=1&&t.string<=8?t.string:null,fret:Number.isInteger(t.fret)&&t.fret>=0&&t.fret<=36?t.fret:null,measure:Number.isInteger(t.measure)&&t.measure>0?t.measure:null})):[],trace:Array.isArray(h.trace)?h.trace.slice(0,256).map(t=>Number.isFinite(t)?t:null):[]})):[];
   return p;
 }
 export const unlocked = (skill,p) => !skill.requires || (p.skills[skill.requires]||0)>=1;
@@ -23,12 +23,12 @@ export function award(p,skill,rule,result) {
   if (!unlocked(skill,p)||!result.passed||rule.tier!==(p.skills[skill.id]||0)+1) return false;
   p.skills[skill.id]=rule.tier; p.xp+=rule.tier*100; return true;
 }
-export function makeSession(skill,rule,profile,now=0) {
+export function makeSession(skill,rule,profile,now=0,countInMs=3000) {
   const pattern=skill.sequence;
   const count=skill.timed?pattern.length:Math.max(12,pattern.length*2);
-  const events=Array.from({length:count},(_,i)=>({...pattern[i%pattern.length],at:now+3000+(skill.timed?pattern[i].offsetMs:i*60000/rule.bpm),status:'pending'}));
+  const events=Array.from({length:count},(_,i)=>({...pattern[i%pattern.length],at:now+countInMs+(skill.timed?pattern[i].offsetMs:i*60000/rule.bpm),status:'pending'}));
   if(skill.timed)events.forEach((e,i)=>{const next=events.slice(i+1).find(n=>!n.passive);e.window=next?Math.min(rule.window,(next.at-e.at)*.45):rule.window;});
-  return {skill,rule,events,total:events.filter(e=>!e.passive).length,index:0,judged:0,hits:0,attempts:0,boost:boostTotal(profile),started:now,ended:false,feedback:'Get ready',lastAttempt:-Infinity};
+  return {skill,rule,events,total:events.filter(e=>!e.passive).length,index:0,judged:0,hits:0,attempts:0,boost:boostTotal(profile),started:now,countInMs,ended:false,feedback:'Get ready',lastAttempt:-Infinity};
 }
 export function advanceMisses(s,now) {
   if(s.ended)return;
@@ -40,14 +40,14 @@ export function advanceMisses(s,now) {
   s.ended=s.index===s.events.length;
 }
 export function attempt(s,match,now) {
-  if(s.ended||now<s.started+3000||now-s.lastAttempt<(s.skill.timed?60:160)) return false;
+  if(s.ended||now<s.started+s.countInMs||now-s.lastAttempt<(s.skill.timed?60:160)) return false;
   advanceMisses(s,now); if(s.ended)return false;
   const event=s.events[s.index];
   if(event.passive)return false;
   if(s.rule.mode!=='wait' && Math.abs(now-event.at)>(event.window??s.rule.window)) {s.feedback='Too early · watch the play line';return false;}
-  s.lastAttempt=now;s.attempts++;
+  s.lastAttempt=now;s.attempts++;event.deltaMs=Math.round(now-event.at);
   if(match){event.status='hit';s.hits++;s.index++;s.judged++;s.feedback='Nice!';}
-  else {s.feedback='Try again · listen to the target';if(s.rule.mode!=='wait'){event.status='wrong';s.index++;s.judged++;s.feedback='Wrong note · keep going';}}
+  else {event.wrongAttempts=(event.wrongAttempts||0)+1;s.feedback='Try again · listen to the target';if(s.rule.mode!=='wait'){event.status='wrong';s.index++;s.judged++;s.feedback='Wrong note · keep going';}}
   s.ended=s.index===s.events.length; return true;
 }
 export function validatePack(data) {

@@ -14,13 +14,29 @@ Open **http://localhost:3210** in a current Chrome or Edge browser. Guitar Pro a
 
 ## Play
 
-- Start in **Demo mode**. In a lesson, press **Space** (correct target) or **X** (wrong note); mobile players can use the onscreen buttons. Wait for the three-second count-in. Keyboard auto-repeat is ignored.
+- Start in **Demo mode**. In a lesson, press **Space** (correct target) or **X** (wrong note); mobile players can use the onscreen buttons. Count-in length is customizable. Keyboard auto-repeat is ignored.
 - Choose **Input & tuner** for real guitar practice. Plug the iRig into USB, connect the guitar, grant browser microphone permission, then select the iRig and reconnect. Some interfaces use channel 2; select the appropriate channel and reconnect.
 - Choose from 20 tuner presets, including Standard, Drop D, DADGAD, open tunings, 7- and 8-string tunings, or enter a custom tuning of 4–8 open strings. Select a string to focus the tuner or use Auto. The reference pitch is A4 = 440 Hz.
 - A clean, dry signal works best. Turn off distortion, chorus, delay, and amp effects. Mute unused strings. Set input gain so notes are comfortably above the noise gate without clipping.
-- Select **Use live guitar for lessons**. Audio is processed in memory on your device and is never uploaded or recorded. This app does not route audio to speakers; use interface direct monitoring.
+- Select **Use live guitar for lessons**. Input analysis stays on your device. Optional practice recording is local to the browser and is never uploaded. This app does not route guitar audio to speakers; use interface direct monitoring.
 - If the meter stays flat, check the chosen device/channel, OS permissions, hardware gain, and cabling. This build has not yet been validated with physical iRig hardware.
-- Use the tuner before lessons. Positive timing compensation moves detections earlier by the chosen number of milliseconds. This is a manual adjustment, not automatic latency calibration.
+- Use the tuner before lessons. Latency calibration plays eight metronome beats and estimates input alignment; it includes your response timing, so adjust the compensation slider if needed.
+
+## Practice dashboard and coaching
+
+**Progress & tools** keeps up to 200 recent sessions in each local profile. It shows average accuracy, practice streak, daily plan, goals with due dates, achievements, note/chord accuracy, tempo history, weak string/fret positions, hardest repeated songs, and personal bests. The fretboard heatmap colors positions red, yellow, or green as attempts accumulate.
+
+Lessons include pitch-plus-timing, pitch-only, and rhythm-only scoring. Adaptive repeats are on by default and can be turned off before a lesson: repeated misses focus on the weak note/chord or imported-song measure, then replay it more slowly without awarding a rank for that partial retry. Imported songs support measure A-B loops, four-measure checkpoints, separate checkpoint ranks, and a 60–100% speed ladder that advances after 90% accuracy. A personal-best timing ghost is shown when a saved trace is available.
+
+The practice tools also include a configurable metronome (quarter, eighth, or sixteenth-note subdivisions, beat-one accent, visual pulse), one- or two-bar count-in, noise gate, input meter, detected frequency/note, signal-quality readout, sample-rate and latency details, and optional local run recording for playback. The tuner supports alternate presets and custom 4–8 string tunings.
+
+Fretboard, ear, chord-transition, scale, and technique-guidance drills can be started from the dashboard. The ear trainer plays a reference note; chord changes report clean transitions per minute. Technique guidance can teach picking, muting, bends, slides, and legato, but ranks grade only the pitch/timing signals described above.
+
+## Custom lessons, sharing, and offline use
+
+The library's **Custom lesson builder** accepts fret positions such as `6:0 6:3 5:0 5:2` or supported chord names. Import and export a single JSON bundle containing lesson packs and tuner/practice preferences; bundles exclude recordings and device identifiers. Packs remain subject to the 30-pack browser limit and the stated license/source metadata.
+
+The app is a PWA and caches its trainer shell for offline practice after the first online load. Install it from the Chrome or Edge app/install menu. Progress, plans, goals, tuner preferences, and imported songs remain in that browser profile. Score-file parsing still depends on the local Node server; already imported songs can be practiced from the browser's offline cache and IndexedDB.
 
 ## Progression and scoring
 
@@ -98,6 +114,6 @@ Node tests cover progression, buffs, scoring, timing, pack validation, synthetic
 
 ## Next development steps
 
-Collect licensed real-guitar validation recordings; measure recognition precision and latency across iRig devices; improve voicing-invariant chord detection and onset detection; add rhythm durations/rests and metronome; expand Guitar Pro and MusicXML import coverage; implement technique-specific grading; add profile export/sync and richer AI difficulty.
+Collect licensed real-guitar validation recordings; measure recognition precision and latency across iRig devices; improve voicing-invariant chord detection and onset detection; expand Guitar Pro and MusicXML import coverage; implement technique-specific grading; add profile sync and richer AI difficulty.
 
 

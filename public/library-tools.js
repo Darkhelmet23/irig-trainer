@@ -1,0 +1,19 @@
+import {validatePack} from './engine.js';
+import {validTuning} from './tunings.js';
+import {CHORDS} from './curriculum.js';
+
+const $=selector=>document.querySelector(selector);
+export function libraryToolsMarkup(){return `<section class="page-panel custom-builder"><div class="section-heading"><div><span class="eyebrow">MAKE IT YOURS</span><h2>Custom lesson builder</h2></div></div><p>Enter fret positions like <code>6:0 6:3 5:0 5:2</code>, or chord names like <code>Em C G D</code>. You can also import and export a shareable pack bundle.</p><div class="builder-grid"><label class="form-group"><span>Lesson title</span><input id="builder-title" maxlength="100" value="My guitar drill"></label><label class="form-group"><span>Notes or chords</span><textarea id="builder-sequence" rows="3" placeholder="6:0 6:3 5:0 5:2"></textarea></label><button class="primary" id="build-pack">Add custom lesson</button></div><div class="library-toolbar"><button class="outline-btn" id="export-bundle">Export lessons & settings ↓</button><button class="outline-btn" id="import-bundle-button">Import bundle ↑</button><input type="file" id="import-bundle" accept=".json,application/json" hidden></div><p class="tiny muted">Bundles contain your imported lesson packs and selected practice/tuner preferences; they never include account data, audio, or device IDs.</p></section>`;}
+function makePack(title,source,sequence){return validatePack({version:1,title,author:'Local custom lesson',source,license:'CC0-1.0',sequence});}
+export function parseBuilder(title,text,source='https://github.com/Darkhelmet23/irig-trainer'){
+  const tokens=text.trim().split(/[\s,;]+/).filter(Boolean);if(tokens.length<4||tokens.length>256)throw new Error('Enter 4–256 notes or chords.');
+  const chords=tokens.every(token=>Object.hasOwn(CHORDS,token));
+  const sequence=chords?tokens.map(chord=>({chord})):tokens.map(token=>{const match=/^([1-6]):(\d|1\d|2[0-4])$/.exec(token);if(!match)throw new Error(`Could not read “${token}”. Use string:fret pairs or supported chord names.`);return {string:Number(match[1]),fret:Number(match[2])};});
+  return makePack(title||'My guitar drill',source,sequence);
+}
+export function bindLibraryTools({packs,settings,practice,onPack,onBundle}){
+  $('#build-pack')?.addEventListener('click',()=>{try{onPack(parseBuilder($('#builder-title').value,$('#builder-sequence').value));}catch(error){alert(error.message);}});
+  $('#export-bundle')?.addEventListener('click',()=>{const bundle={format:'irig-trainer-bundle',version:1,exportedAt:new Date().toISOString(),packs:packs.slice(0,30),tuner:{tuning:settings.tuning,tuningId:settings.tuningId,gate:settings.gate,offset:settings.offset},practice:{countInBars:practice.countInBars,metronome:practice.metronome,subdivision:practice.subdivision,accent:practice.accent,accuracyMode:practice.accuracyMode}};download(bundle,'irig-practice-bundle.json');});
+  $('#import-bundle-button')?.addEventListener('click',()=>$('#import-bundle').click());$('#import-bundle')?.addEventListener('change',async event=>{try{const data=JSON.parse(await event.target.files[0].text());if(data.format!=='irig-trainer-bundle'||data.version!==1||!Array.isArray(data.packs)||data.packs.length>30)throw new Error('Choose an iRig Trainer bundle with up to 30 lesson packs.');const imported=data.packs.map(pack=>validatePack(pack));if(data.tuner?.tuning&&!validTuning(data.tuner.tuning))throw new Error('The bundle contains an invalid tuning.');onBundle({packs:imported,tuner:data.tuner,practice:data.practice});}catch(error){alert(error.message);}finally{event.target.value='';}});
+}
+function download(data,name){const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
