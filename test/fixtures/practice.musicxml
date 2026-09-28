@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Original synthetic import test, CC0-1.0. No commercial song content. -->
+<score-partwise version="4.0">
+ <work><work-title>Drop D Import Study</work-title></work>
+ <identification><creator type="composer">iRig Trainer</creator><rights>CC0-1.0</rights></identification>
+ <part-list>
+  <score-part id="P1"><part-name>Drop D Guitar</part-name><midi-instrument id="I1"><midi-channel>1</midi-channel><midi-program>25</midi-program></midi-instrument></score-part>
+  <score-part id="P2"><part-name>Melody without tabs</part-name><midi-instrument id="I2"><midi-channel>2</midi-channel><midi-program>1</midi-program></midi-instrument></score-part>
+  <score-part id="P3"><part-name>Drums</part-name><midi-instrument id="I3"><midi-channel>10</midi-channel><midi-unpitched>39</midi-unpitched></midi-instrument></score-part>
+ </part-list>
+ <part id="P1">
+  <measure number="1">
+   <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>TAB</sign><line>5</line></clef><staff-details><staff-lines>6</staff-lines>
+    <staff-tuning line="1"><tuning-step>D</tuning-step><tuning-octave>2</tuning-octave></staff-tuning>
+    <staff-tuning line="2"><tuning-step>A</tuning-step><tuning-octave>2</tuning-octave></staff-tuning>
+    <staff-tuning line="3"><tuning-step>D</tuning-step><tuning-octave>3</tuning-octave></staff-tuning>
+    <staff-tuning line="4"><tuning-step>G</tuning-step><tuning-octave>3</tuning-octave></staff-tuning>
+    <staff-tuning line="5"><tuning-step>B</tuning-step><tuning-octave>3</tuning-octave></staff-tuning>
+    <staff-tuning line="6"><tuning-step>E</tuning-step><tuning-octave>4</tuning-octave></staff-tuning>
+   </staff-details></attributes>
+   <direction><sound tempo="120"/></direction>
+   <note><pitch><step>D</step><octave>2</octave></pitch><duration>4</duration><type>quarter</type><notations><technical><string>6</string><fret>0</fret></technical></notations></note>
+   <note><rest/><duration>4</duration><type>quarter</type></note>
+   <note><pitch><step>E</step><octave>3</octave></pitch><duration>2</duration><type>eighth</type><notations><technical><string>4</string><fret>2</fret><hammer-on type="start" number="1">H</hammer-on></technical></notations></note>
+   <note><pitch><step>F</step><alter>1</alter><octave>3</octave></pitch><duration>2</duration><type>eighth</type><notations><technical><string>4</string><fret>4</fret><hammer-on type="stop" number="1"/></technical></notations></note>
+   <note><pitch><step>G</step><octave>3</octave></pitch><duration>4</duration><type>quarter</type><notations><technical><string>3</string><fret>0</fret></technical></notations></note>
+   <note><chord/><pitch><step>B</step><octave>3</octave></pitch><duration>4</duration><type>quarter</type><notations><technical><string>2</string><fret>0</fret></technical></notations></note>
+  </measure>
+  <measure number="2">
+   <direction><sound tempo="60"/></direction>
+   <note><pitch><step>D</step><octave>2</octave></pitch><duration>8</duration><tie type="start"/><type>half</type><notations><tied type="start"/><technical><string>6</string><fret>0</fret></technical></notations></note>
+   <note><pitch><step>D</step><octave>2</octave></pitch><duration>8</duration><tie type="stop"/><type>half</type><notations><tied type="stop"/><technical><string>6</string><fret>0</fret></technical></notations></note>
+  </measure>
+ </part>
+ <part id="P2"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes><note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note></measure><measure number="2"><note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note></measure></part>
+ <part id="P3"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>percussion</sign></clef></attributes><note><unpitched><display-step>C</display-step><display-octave>5</display-octave></unpitched><duration>4</duration><type>whole</type></note></measure><measure number="2"><note><rest/><duration>4</duration><type>whole</type></note></measure></part>
+</score-partwise>

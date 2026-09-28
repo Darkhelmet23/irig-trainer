@@ -1,0 +1,20 @@
+{
+    "name": "irig-trainer",
+    "version": "0.2.0",
+    "private": true,
+    "type": "module",
+    "description": "A guitar practice adventure with live USB audio and two skill trees.",
+    "scripts": {
+        "start": "node server.js",
+        "test": "node --test test/*.test.js"
+    },
+    "engines": {
+        "node": ">=22"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.63.0"
+    },
+    "dependencies": {
+        "@coderline/alphatab": "^1.8.4"
+    }
+}
