@@ -57,7 +57,8 @@ test('Diamond battle applies equipped bonuses and awards mastery only on a win',
 
 test('permission denial is actionable and does not fake a connected input',async({page})=>{
   await page.addInitScript(()=>{navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Denied','NotAllowedError');};});
-  await page.goto('/#setup');await page.locator('#connect').click();await expect(page.locator('#device-label')).toContainText('Permission denied');await expect(page.locator('#input-status')).not.toHaveClass(/connected/);
+  await page.goto('/#setup');await expect(page.getByRole('heading',{name:'iRig hardware check'})).toBeVisible();await page.locator('#mark-false-positive').click();await expect(page.locator('#diag-false')).toHaveText('1');await page.locator('#mark-missed-attack').click();await expect(page.locator('#diag-missed')).toHaveText('1');await page.locator('#reset-diagnostics').click();await expect(page.locator('#diag-false')).toHaveText('0');
+  await page.locator('#connect').click();await expect(page.locator('#device-label')).toContainText('Permission denied');await expect(page.locator('#input-status')).not.toHaveClass(/connected/);
 });
 
 test('real Web Audio pipeline detects a synthesized guitar stream and awards only live progress',async({page})=>{

@@ -69,7 +69,7 @@ export class GuitarInput {
     if(onset&&now-this.lastTrigger>230)this.armed=true;
     const trigger=key!==null&&this.armed&&now-this.stableSince>=100&&now-this.lastTrigger>210;
     if(trigger){this.lastTrigger=now;this.armed=false;}
-    this.priorRms=pitch.rms;this.onData({...pitch,...chord,trigger,clipping:pitch.rms>0.65});
+    this.priorRms=pitch.rms;this.onData({...pitch,...chord,pitchConfidence:pitch.confidence,chordConfidence:chord.confidence,trigger,clipping:pitch.rms>0.65});
   }
   async disconnect(){this.running=false;clearInterval(this.timer);this.stream?.getTracks().forEach(t=>t.stop());this.source?.disconnect();this.splitter?.disconnect();if(this.ctx&&this.ctx.state!=='closed')await this.ctx.close();this.stream=null;this.ctx=null;}
 }

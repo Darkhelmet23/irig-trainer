@@ -1,9 +1,9 @@
-const CACHE = 'irig-trainer-static-v2';
+const CACHE = 'irig-trainer-static-v3';
 const ASSETS = [
   '/', '/index.html', '/style.css', '/app.js', '/audio.js', '/curriculum.js',
   '/engine.js', '/tunings.js', '/songs.js', '/repertoire.js', '/arcade-ui.js',
-  '/practice-hub.js', '/drills.js', '/session-coach.js', '/metronome.js', '/session-controls.js',
-  '/score-practice.js', '/library-tools.js', '/manifest.webmanifest', '/icon.svg'
+  '/practice-hub.js', '/drills.js', '/session-coach.js', '/song-difficulty.js', '/input-diagnostics.js',
+  '/metronome.js', '/session-controls.js', '/score-practice.js', '/library-tools.js', '/manifest.webmanifest', '/icon.svg'
 ];
 
 self.addEventListener('install', event => {

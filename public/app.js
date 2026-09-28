@@ -8,9 +8,10 @@ import {riffArcadeMarkup} from './arcade-ui.js';
 import {progressPage,bindProgressPage} from './practice-hub.js';
 import {createDrill,fretboardMap,scaleNames,chordProgressions} from './drills.js';
 import {Metronome} from './metronome.js';
-import {sessionToolsMarkup,bindSessionTools} from './session-controls.js';
-import {scorePracticeMarkup} from './score-practice.js';
+import {sessionToolsMarkup,bindSessionTools,renderInputDiagnostics} from './session-controls.js';
+import {scorePracticeMarkup,updateSongDifficulty} from './score-practice.js';
 import {libraryToolsMarkup,bindLibraryTools} from './library-tools.js';
+import {InputDiagnostics} from './input-diagnostics.js';
 import {analyzeSession,sessionCoachMarkup,dashboardCoachMarkup,nextPractice} from './session-coach.js';
 const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function read(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}}
@@ -19,8 +20,9 @@ let mode=read('irig-mode','demo')==='live'?'live':'demo',profile=sanitizeProfile
 let page='tree',track='tabs',selected='tabs-0',session=null,lesson=null,selectedRule=0,frame=0,devices=[],audioLabel='',connecting=false;
 let packs=[];for(const pack of read('irig-packs',[]).slice?.(0,30)||[]){try{packs.push(validatePack(pack));}catch{}}
 const settings={gate:0.008,offset:0,channel:0,...read('irig-settings',{})};
+const inputDiagnostics=new InputDiagnostics(settings.offset);
 const practicePrefs={countInBars:1,metronome:false,subdivision:1,accent:true,record:false,accuracyMode:'both',...read('irig-practice-settings',{})};
-let latencyCalibration=null,lastMetronomePulse=0;
+let latencyCalibration=null,lastMetronomePulse=0,lastDiagnosticRender=0;
 const metronome=new Metronome(pulse=>{lastMetronomePulse=pulse.at;const light=$('#beat-light');if(light){light.classList.add('on');setTimeout(()=>light.classList.remove('on'),100);}});
 let activeRecorder=null,recordingParts=[],recordedAudioUrl=null;
 let songs=[],selectedSong=null,selectedPart=null,selectedCheckpoint=null,importingScore=false;
@@ -46,9 +48,9 @@ function render(){
   $('#breadcrumb').innerHTML=`Your journey <span>/</span> ${title}`;
   $('#main').innerHTML=({tree:treePage,arena:arenaPage,library:libraryPage,progress:()=>progressPage(profile),setup:setupPage}[page])();
   if(page==='progress')document.querySelector('#main .title-row')?.insertAdjacentHTML('afterend',dashboardCoachMarkup(profile));
-  if(page==='library'){document.querySelector('.song-import')?.insertAdjacentHTML('afterend',riffArcadeMarkup());const song=songs.find(s=>s.id===selectedSong),part=song?.tracks.find(t=>t.id===selectedPart);if(song&&part){document.querySelector('#song-editor .song-options')?.insertAdjacentHTML('afterend',scorePracticeMarkup(song,part));if($('#song-from'))$('#song-from').closest('label').querySelector('span').textContent='A - Start measure';if($('#song-to'))$('#song-to').closest('label').querySelector('span').textContent='B - End measure';for(const speed of [.6,.7,.8,.9]){const select=$('#song-speed');if(select&&!select.querySelector(`option[value="${speed}"]`)){const option=document.createElement('option');option.value=String(speed);option.textContent=Math.round(speed*100)+'% · ladder';select.insertBefore(option,select.querySelector('option[value="1"]'));}}}}
+  if(page==='library'){document.querySelector('.song-import')?.insertAdjacentHTML('afterend',riffArcadeMarkup());const song=songs.find(s=>s.id===selectedSong),part=song?.tracks.find(t=>t.id===selectedPart);if(song&&part){document.querySelector('#song-editor .song-options')?.insertAdjacentHTML('afterend',scorePracticeMarkup(song,part,{from:1,to:Math.min(16,Math.max(1,...part.events.map(e=>e.measure||1)))}));if($('#song-from'))$('#song-from').closest('label').querySelector('span').textContent='A - Start measure';if($('#song-to'))$('#song-to').closest('label').querySelector('span').textContent='B - End measure';for(const speed of [.6,.7,.8,.9]){const select=$('#song-speed');if(select&&!select.querySelector(`option[value="${speed}"]`)){const option=document.createElement('option');option.value=String(speed);option.textContent=Math.round(speed*100)+'% · ladder';select.insertBefore(option,select.querySelector('option[value="1"]'));}}}}
   if(page==='library')document.querySelector('.riff-arcade')?.insertAdjacentHTML('afterend',libraryToolsMarkup());
-  if(page==='setup')document.querySelector('#main .two-col')?.insertAdjacentHTML('afterend',sessionToolsMarkup(practicePrefs,input));
+  if(page==='setup')document.querySelector('#main .two-col')?.insertAdjacentHTML('afterend',sessionToolsMarkup(practicePrefs,input,inputDiagnostics.snapshot()));
   bindPage();
 }
 function modeBanner(){return `<div class="mode-banner"><span>${mode==='demo'?'◈ DEMO MODE · Try lessons with your keyboard. Demo ranks never count toward guitar progress.':'◉ LIVE GUITAR · Your lessons use real audio input. Progress is saved on this browser.'}</span><button class="outline-btn" id="switch-mode">${mode==='demo'?'Use guitar':'Try demo'}</button></div>`;}
@@ -79,7 +81,7 @@ function bindPage(){
   bindSongs();bindTuner();
   if(page==='library')bindLibraryTools({packs,settings,practice:practicePrefs,onPack:pack=>{if(packs.length>=30)return toast('This library holds up to 30 imported packs.');packs.push(pack);save('irig-packs',packs);render();toast('Custom lesson added to your library.');},onBundle:bundle=>{if(packs.length+bundle.packs.length>30)return toast('Remove some imported packs first; the library holds up to 30.');packs=[...packs,...bundle.packs];if(validTuning(bundle.tuner?.tuning)){settings.tuning=bundle.tuner.tuning.slice();settings.tuningId=TUNINGS.find(t=>t.notes.join(',')===settings.tuning.join(','))?.id||'custom';settings.gate=Math.max(.001,Math.min(.05,Number(bundle.tuner.gate)||settings.gate));settings.offset=Math.max(-300,Math.min(300,Number(bundle.tuner.offset)||0));save('irig-settings',settings);}const p=bundle.practice||{};practicePrefs.countInBars=[0,1,2].includes(Number(p.countInBars))?Number(p.countInBars):practicePrefs.countInBars;practicePrefs.subdivision=[1,2,4].includes(Number(p.subdivision))?Number(p.subdivision):practicePrefs.subdivision;practicePrefs.metronome=!!p.metronome;practicePrefs.accent=p.accent!==false;practicePrefs.accuracyMode=['both','pitch','rhythm'].includes(p.accuracyMode)?p.accuracyMode:practicePrefs.accuracyMode;save('irig-packs',packs);save('irig-practice-settings',practicePrefs);render();toast('Bundle imported. Lessons and practice settings are ready.');}});
   if(page==='progress')bindProgressPage((type,options)=>{try{openLesson(createDrill(type,{...options,profile,tuning:settings.tuning}),true);}catch(error){toast(error.message);}});
-  if(page==='setup')bindSessionTools(practicePrefs,prefs=>save('irig-practice-settings',prefs),startLatencyCalibration);
+  if(page==='setup')bindSessionTools(practicePrefs,prefs=>save('irig-practice-settings',prefs),startLatencyCalibration,inputDiagnostics);
   $('#switch-mode')?.addEventListener('click',()=>{setMode(mode==='demo'?'live':'demo');if(mode==='live'&&!input.running)go('setup');});
   $('#view-arena')?.addEventListener('click',()=>go('arena'));$('#buff-info')?.addEventListener('click',()=>go('arena'));
   $('#continue')?.addEventListener('click',e=>openLesson(skillById(e.currentTarget.dataset.skill)));
@@ -93,7 +95,7 @@ function bindPage(){
   $('#connect')?.addEventListener('click',connect);$('#disconnect')?.addEventListener('click',async()=>{await input.disconnect();audioLabel='Disconnected';render();});
   $('#channel')?.addEventListener('change',e=>{settings.channel=Number(e.target.value);save('irig-settings',settings);toast('Channel saved. Reconnect input to apply.');});
   $('#gate')?.addEventListener('input',e=>{settings.gate=Number(e.target.value);input.gate=settings.gate;$('#gate-label').textContent=settings.gate.toFixed(3);save('irig-settings',settings);});
-  $('#offset')?.addEventListener('input',e=>{settings.offset=Number(e.target.value);$('#offset-label').textContent=settings.offset+' ms';save('irig-settings',settings);});
+  $('#offset')?.addEventListener('input',e=>{settings.offset=Number(e.target.value);inputDiagnostics.setCalibration(settings.offset);$('#offset-label').textContent=settings.offset+' ms';renderInputDiagnostics(inputDiagnostics.snapshot());save('irig-settings',settings);});
   $('#live-mode')?.addEventListener('change',e=>setMode(e.target.checked?'live':'demo'));
 }
 async function connect(){const id=$('#device-select').value;connecting=true;render();try{devices=await input.connect(id,settings.channel);mode='live';profile=sanitizeProfile(read('irig-live',null));save('irig-mode',mode);toast('Audio connected. Play a note to check the tuner.');}catch(e){audioLabel=e.name==='NotAllowedError'?'Permission denied. Allow microphone access in your browser and try again.':e.name==='NotFoundError'?'No audio input found. Connect your iRig and try again.':e.message;toast(audioLabel);}finally{connecting=false;render();}}
@@ -180,13 +182,14 @@ function finishSession(){
 function cancelSession(){cancelAnimationFrame(frame);session=null;input.chordMode=false;input.chordCandidates=null;metronome.stop();stopRecording(false);}
 function closeLesson(){cancelSession();$('#lesson-dialog').close();render();lastFocused?.isConnected&&lastFocused.focus();}
 function onAudio(data){
+  inputDiagnostics.observe(data);if(page==='setup'&&performance.now()-lastDiagnosticRender>=100){renderInputDiagnostics(inputDiagnostics.snapshot());lastDiagnosticRender=performance.now();}
   if($('#tuner-note'))updateTuner(data);
   if($('#lesson-meter'))$('#lesson-meter').style.width=Math.min(100,data.rms*350)+'%';
   if($('#device-level'))$('#device-level').style.width=Math.min(100,data.rms*350)+'%';
   if($('#device-frequency'))$('#device-frequency').textContent=data.frequency?`${data.frequency.toFixed(1)} Hz`:'—';
   if($('#device-note'))$('#device-note').textContent=data.midi===null?'—':noteName(data.midi);
-  if($('#device-quality'))$('#device-quality').textContent=data.clipping?'clipping':data.rms<input.gate*2?'below gate':data.midi!==null?'signal received':'weak / noisy';
-  if(latencyCalibration&&data.trigger){const beatMs=60000/latencyCalibration.bpm,phase=((performance.now()-lastMetronomePulse+beatMs/2)%beatMs)-beatMs/2;latencyCalibration.errors.push(phase);$('#calibration-status').textContent=`Captured ${latencyCalibration.errors.length}/8 attacks…`;if(latencyCalibration.errors.length>=8){const sorted=latencyCalibration.errors.slice().sort((a,b)=>a-b),median=(sorted[3]+sorted[4])/2;settings.offset=Math.round(Math.max(-300,Math.min(300,median))/5)*5;save('irig-settings',settings);$('#offset').value=settings.offset;$('#offset-label').textContent=settings.offset+' ms';$('#calibration-status').textContent=`Estimated alignment ${settings.offset>=0?'+':''}${settings.offset} ms. This includes your response timing.`;latencyCalibration=null;metronome.stop();}}
+  if($('#device-quality'))$('#device-quality').textContent=data.clipping?'clipping':data.rms<input.gate*2?'below gate':data.midi!==null?`${Math.round((data.pitchConfidence||0)*100)}% pitch confidence`:'weak / noisy';
+  if(latencyCalibration&&data.trigger){const beatMs=60000/latencyCalibration.bpm,phase=((performance.now()-lastMetronomePulse+beatMs/2)%beatMs)-beatMs/2;latencyCalibration.errors.push(phase);$('#calibration-status').textContent=`Captured ${latencyCalibration.errors.length}/8 attacks…`;if(latencyCalibration.errors.length>=8){const sorted=latencyCalibration.errors.slice().sort((a,b)=>a-b),median=(sorted[3]+sorted[4])/2;settings.offset=Math.round(Math.max(-300,Math.min(300,median))/5)*5;inputDiagnostics.setCalibration(settings.offset);save('irig-settings',settings);$('#offset').value=settings.offset;$('#offset-label').textContent=settings.offset+' ms';$('#calibration-status').textContent=`Estimated alignment ${settings.offset>=0?'+':''}${settings.offset} ms. This includes your response timing.`;renderInputDiagnostics(inputDiagnostics.snapshot());latencyCalibration=null;metronome.stop();}}
   if($('#heard-label'))$('#heard-label').textContent=data.clipping?'Lower input gain':input.chordMode?(data.chord?`Hearing ${data.chord.startsWith('score:')?'a voicing':data.chord}`:'Listening for a chord…'):(data.midi!==null?`Hearing ${noteName(data.midi)} · ${Math.round(data.cents)}¢`:'Listening…');
   if(!session||mode!=='live'||!data.trigger)return;
   const now=performance.now()-settings.offset;advanceMisses(session,now);if(session.ended)return;
@@ -223,6 +226,8 @@ function songLibrary(){
 }
 function bindSongs(){
   $('#import-score')?.addEventListener('click',()=>$('#score-file').click());$('#score-file')?.addEventListener('change',importSong);
+  const updateDifficulty=()=>{const song=songs.find(item=>item.id===selectedSong),part=song?.tracks.find(item=>item.id===selectedPart);if(part)updateSongDifficulty(song,part,{from:Number($('#song-from')?.value)||1,to:Number($('#song-to')?.value)||Infinity,speed:Number($('#song-speed')?.value)||.75,focus:$('#song-focus')?.value||'full'});};
+  ['#song-from','#song-to','#song-speed','#song-focus'].forEach(selector=>['input','change'].forEach(event=>$(selector)?.addEventListener(event,updateDifficulty)));
   document.querySelectorAll('[data-open-song]').forEach(b=>b.onclick=()=>{selectedSong=b.dataset.openSong;selectedPart=null;render();$('#song-editor')?.scrollIntoView({behavior:'smooth',block:'start'});});
   document.querySelectorAll('[data-delete-song]').forEach(b=>b.onclick=async()=>{const id=b.dataset.deleteSong;try{await deleteSong(id);songs=songs.filter(s=>s.id!==id);if(selectedSong===id)selectedSong=null;render();toast('Song removed from this browser.');}catch{toast('Could not remove the saved song.');}});
   $('#song-track')?.addEventListener('change',e=>{selectedPart=e.target.value;render();});

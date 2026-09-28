@@ -38,6 +38,18 @@ test('session results summarize timing and offer an adaptive warm-up',async({pag
   expect(errors).toEqual([]);
 });
 
+test('imported score difficulty updates with the selected song section and focus',async({page})=>{
+  await page.addInitScript(async()=>{
+    const request=indexedDB.open('irig-song-library',1);
+    await new Promise((resolve,reject)=>{request.onupgradeneeded=()=>request.result.createObjectStore('songs',{keyPath:'id'});request.onerror=()=>reject(request.error);request.onsuccess=()=>{const db=request.result,tx=db.transaction('songs','readwrite'),events=Array.from({length:16},(_,i)=>({offsetMs:i*180,durationMs:180,measure:Math.floor(i/8)+1,notes:[{midi:76,string:i%2?1:6,fret:17+(i%3),tie:false,dead:false,techniques:['bend','slide']},{midi:67,string:5,fret:14,tie:false,dead:false,techniques:['vibrato','hammer-on']}],techniques:['bend','slide','vibrato','hammer-on'],rest:false}));tx.objectStore('songs').put({id:'seed-score',title:'Dense study',artist:'Test',filename:'study.gp5',format:'gp5',tempo:190,tempos:[{offsetMs:0,bpm:190}],durationMs:2880,tracks:[{id:'guitar-1',name:'Guitar',playable:true,isPercussion:false,tuning:[40,45,50,55,59,64],capo:0,transposition:0,events,techniques:['bend','slide','vibrato','hammer-on'],hasPositions:true,missingPositions:0}],warnings:[]});tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);};});
+  });
+  await page.goto('/#library');await page.locator('[data-open-song="seed-score"]').click();
+  await expect(page.locator('#difficulty-level')).toHaveText('Expert');
+  await expect(page.locator('#difficulty-summary')).toContainText('100% multi-note attacks');
+  await page.locator('#song-focus').selectOption('melody');
+  await expect(page.locator('#difficulty-summary')).toContainText('0% multi-note attacks');
+});
+
 test('custom lesson builder and share bundle import validate and persist lesson packs',async({page})=>{
   await page.goto('/#library');
   await page.locator('#builder-title').fill('My warm-up');
