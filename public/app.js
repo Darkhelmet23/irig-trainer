@@ -3,6 +3,8 @@ import {emptyProfile,sanitizeProfile,unlocked,buffs,boostTotal,scoreResult,award
 import {GuitarInput} from './audio.js';
 import {TUNINGS,validTuning,parseTuning,tuningLabel,tuningTarget} from './tunings.js';
 import {loadSongs,saveSong,deleteSong,songLesson,pitchClasses} from './songs.js';
+import {REPERTOIRE} from './repertoire.js';
+import {riffArcadeMarkup} from './arcade-ui.js';
 const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function read(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}}
 function save(key,value){try{localStorage.setItem(key,JSON.stringify(value));}catch{toast('Storage is unavailable. Progress will last only for this visit.');}}
@@ -32,6 +34,7 @@ function render(){
   const title={tree:'Skill tree',arena:'The arena',library:'Lesson library',setup:'Input & tuner'}[page];
   $('#breadcrumb').innerHTML=`Your journey <span>/</span> ${title}`;
   $('#main').innerHTML=({tree:treePage,arena:arenaPage,library:libraryPage,setup:setupPage}[page])();
+  if(page==='library')document.querySelector('.song-import')?.insertAdjacentHTML('afterend',riffArcadeMarkup());
   bindPage();
 }
 function modeBanner(){return `<div class="mode-banner"><span>${mode==='demo'?'◈ DEMO MODE · Try lessons with your keyboard. Demo ranks never count toward guitar progress.':'◉ LIVE GUITAR · Your lessons use real audio input. Progress is saved on this browser.'}</span><button class="outline-btn" id="switch-mode">${mode==='demo'?'Use guitar':'Try demo'}</button></div>`;}
@@ -65,6 +68,7 @@ function bindPage(){
   document.querySelectorAll('[data-track]').forEach(b=>b.onclick=()=>{track=b.dataset.track;selected=SKILLS.find(s=>s.track===track&&unlocked(s,profile)&&!profile.skills[s.id])?.id||`${track}-0`;render();});
   document.querySelectorAll('[data-skill-card]').forEach(b=>b.onclick=()=>{selected=b.dataset.skillCard;render();if(innerWidth<820)$('.detail-card').scrollIntoView({behavior:'smooth',block:'center'});});
   $('#battle')?.addEventListener('click',()=>openLesson(skillById($('#arena-skill').value),false,3));
+  document.querySelectorAll('[data-repertoire]').forEach(b=>b.onclick=()=>{const chart=REPERTOIRE.find(item=>item.id===b.dataset.repertoire);if(chart)openLesson(chart,true);});
   document.querySelectorAll('[data-library]').forEach(b=>b.onclick=()=>{const key=b.dataset.library;let s;if(key.startsWith('pack-')){const p=packs[Number(key.slice(5))];s={...p,id:'library',track:p.sequence[0].chord?'chords':'tabs',guide:`Practice “${p.title}” by ${p.author}. Start slowly and focus on clean changes.`,requires:null};}else{s={...skillById(key),title:key==='tabs-4'?'First light · E minor pentatonic':'Open road · Four-chord loop'};}openLesson(s,true);});
   $('#import-pack')?.addEventListener('click',()=>$('#pack-file').click());$('#pack-file')?.addEventListener('change',importPack);$('#download-pack')?.addEventListener('click',downloadPack);
   $('#connect')?.addEventListener('click',connect);$('#disconnect')?.addEventListener('click',async()=>{await input.disconnect();audioLabel='Disconnected';render();});

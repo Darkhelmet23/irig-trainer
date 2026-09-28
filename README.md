@@ -56,6 +56,10 @@ Parsing runs in a memory-limited worker on this PC with an 8 MB file limit, a 20
 MusicXML without tablature lacks source string/fret positions; the trainer labels its fingering suggestions. MusicXML is complex, and unsupported score markings may be omitted. The trainer displays but does not grade hammer-ons, slides, bends, palm muting or note sustain. Chord recognition for imported voicings is experimental. It does not generate backing audio or connect to mySongBook.
 
 MusicXML is a useful interchange format: [MuseScore calls it a universal score-sharing format](https://handbook.musescore.org/file-management/working-with-musicxml-files). alphaTab documents [Guitar Pro 3–8, GPX, MusicXML and compressed MXL support](https://www.alphatab.net/docs/category/formats/) and [partial MusicXML feature coverage](https://alphatab.net/docs/formats/musicxml/). [Guitar Pro's file-management guide](https://www.guitar-pro.com/docs/gp8/basics/first-steps/file-management) covers opening native files and importing/exporting MusicXML.
+## Riff arcade
+
+The lesson library includes **24 original charts** across four sets, from starter riffs to expert-speed lead and chord runs. Choose guided practice to learn the notes, then scrolling practice to follow the note highway and earn an accuracy percentage. These short charts were created for this project and are CC0-1.0; they are not commercial Guitar Hero songs and do not include backing recordings. Physical string/fret accuracy and chord detection depend on the connected guitar and audio input.
+
 ## Open lesson packs
 
 The bundled short exercises and arrangements were authored for this project and dedicated under **CC0-1.0**; see `CONTENT-LICENSE.md`. No copyrighted commercial song tabs are bundled or scraped.
