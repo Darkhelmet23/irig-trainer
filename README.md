@@ -24,7 +24,7 @@ Open **http://localhost:3210** in a current Chrome or Edge browser. Guitar Pro a
 
 ## Practice dashboard and coaching
 
-**Progress & tools** keeps up to 200 recent sessions in each local profile. It shows average accuracy, practice streak, daily plan, goals with due dates, achievements, note/chord accuracy, tempo history, weak string/fret positions, hardest repeated songs, and personal bests. The fretboard heatmap colors positions red, yellow, or green as attempts accumulate.
+**Progress & tools** keeps up to 200 recent sessions in each local profile. It shows average accuracy, practice streak, daily plan, goals with due dates, achievements, note/chord accuracy, tempo history, weak string/fret positions, hardest repeated songs, and personal bests. The fretboard heatmap colors positions red, yellow, or green as attempts accumulate. A session coach highlights the hardest and strongest measures, compares a run with a personal best, summarizes early/late timing, recommends a next step, and generates a warm-up from recent weak string/fret positions.
 
 Lessons include pitch-plus-timing, pitch-only, and rhythm-only scoring. Adaptive repeats are on by default and can be turned off before a lesson: repeated misses focus on the weak note/chord or imported-song measure, then replay it more slowly without awarding a rank for that partial retry. Imported songs support measure A-B loops, four-measure checkpoints, separate checkpoint ranks, and a 60–100% speed ladder that advances after 90% accuracy. A personal-best timing ghost is shown when a saved trace is available.
 

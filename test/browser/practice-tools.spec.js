@@ -7,6 +7,10 @@ test('progress dashboard tracks history, goals, and generated fretboard drills',
   ]})));
   await page.goto('/#progress');
   await expect(page.getByRole('heading',{name:'Progress & practice tools'})).toBeVisible();
+  await expect(page.locator('.coach-dashboard')).toContainText('biggest recent weak spot');
+  await page.locator('.coach-dashboard [data-hub-drill="warmup"]').click();
+  await expect(page.locator('#lesson-title')).toHaveText('Weak-spot warm-up');
+  await page.locator('#close-lesson').click();
   await expect(page.locator('.heat-cell.weak')).toHaveCount(1);
   await page.locator('#goal-form [name="title"]').fill('Gold on five skills');
   await page.locator('#goal-form select').selectOption('gold');
@@ -19,6 +23,19 @@ test('progress dashboard tracks history, goals, and generated fretboard drills',
   await page.locator('#begin').click();
   await expect(page.locator('#stage .score-event .fret-marker').first()).toHaveText('?');
   await expect(page.locator('#target-name')).toContainText('Find C on the A string');
+});
+
+test('session results summarize timing and offer an adaptive warm-up',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('/');await page.clock.install();
+  await page.getByRole('button',{name:/Play your first lesson/}).click();
+  await page.locator('#begin').click();await page.clock.runFor(4100);
+  for(let i=0;i<12;i++){await page.keyboard.press('Space');await page.clock.runFor(200);}
+  await expect(page.locator('.session-coach')).toContainText('Session coach');
+  await expect(page.locator('.session-coach')).toContainText('This guided or pitch-only run did not score timing');
+  await page.locator('#result-warmup').click();
+  await expect(page.locator('#lesson-title')).toHaveText('Starter warm-up');
+  expect(errors).toEqual([]);
 });
 
 test('custom lesson builder and share bundle import validate and persist lesson packs',async({page})=>{

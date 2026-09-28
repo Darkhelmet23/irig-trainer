@@ -1,4 +1,5 @@
 import {CHORDS,SKILLS,TUNING,noteName} from './curriculum.js';
+import {weakSpotWarmup} from './session-coach.js';
 
 const STEPS={
   'Major':[0,2,4,5,7,9,11],'Natural minor':[0,2,3,5,7,8,10],
@@ -15,6 +16,7 @@ const event=(string,fret,index,{ear=false,find=false}={})=>{const midi=TUNING[st
 const timed=(skill,bpm=120)=>({...skill,tuning:TUNING,timed:true,speed:1,bpm,offsets:true,sequence:skill.sequence.map((e,i)=>({...e,offsetMs:i*60000/bpm,durationMs:60000/bpm,measure:Math.floor(i/4)+1,techniques:e.techniques||[]}))});
 
 export function createDrill(kind,options={}){
+  if(kind==='warmup')return weakSpotWarmup(options.profile,options.tuning);
   if(kind==='fretboard'){
     const wanted=options.note||'C',pc=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].indexOf(wanted),string=Number(options.string)||5;
     const positions=[];for(let fret=0;fret<=12;fret++){const midi=TUNING[string-1]+fret;if(midi%12===pc)positions.push({string,fret});}
