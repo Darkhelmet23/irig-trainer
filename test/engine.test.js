@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SKILLS,RULES,CHORDS,skillById} from '../public/curriculum.js';
-import {emptyProfile,sanitizeProfile,unlocked,boostTotal,scoreResult,award,makeSession,advanceMisses,attempt,validatePack} from '../public/engine.js';
+import {emptyProfile,sanitizeProfile,unlocked,boostTotal,scoreResult,award,awardPracticeXP,makeSession,advanceMisses,attempt,validatePack} from '../public/engine.js';
+import {MASTERY_THRESHOLDS,MASTERY_NAMES,PROGRESSION_NODES,masteryTier,masteryProgress,isProgressionUnlocked,calculatePracticeXP} from '../public/progression.js';
+import {generatePracticeSequence,practiceLengthForRule} from '../public/lesson-patterns.js';
 import {detectPitch,detectChord,midiHz} from '../public/audio.js';
 import {createServer} from '../server.js';
 
@@ -14,13 +16,77 @@ test('Bronze unlocks the next skill; ranks cannot be skipped or farmed',()=>{
   assert.equal(award(p,first,RULES[2],{passed:true}),false);
   assert.equal(award(p,first,RULES[0],{passed:false}),false);
   assert.equal(award(p,first,RULES[0],{passed:true}),true);assert.equal(unlocked(next,p),true);
-  assert.equal(award(p,first,RULES[0],{passed:true}),false);assert.equal(p.xp,100);
+  assert.equal(award(p,first,RULES[0],{passed:true}),false);assert.equal(p.xp,0);
   for(const rule of RULES.slice(1))assert.equal(award(p,first,rule,{passed:true}),true);
-  assert.equal(p.skills[first.id],4);assert.equal(p.xp,1000);
+  assert.equal(p.skills[first.id],4);assert.equal(p.xp,0);
+});
+test('mastery XP uses Bronze, Silver, Gold, and Diamond milestones',()=>{
+  assert.deepEqual(MASTERY_THRESHOLDS,[0,100,250,500,900]);
+  assert.deepEqual(MASTERY_NAMES,['Unranked','Bronze','Silver','Gold','Diamond']);
+  assert.equal(masteryTier(99),0);assert.equal(masteryTier(100),1);assert.equal(masteryTier(325),2);assert.equal(masteryTier(900),4);
+  const progress=masteryProgress({skillXP:{'scales-pentatonic':325}},'scales-pentatonic');
+  assert.deepEqual({xp:progress.xp,tier:progress.tier,nextXP:progress.nextXP,remaining:progress.remaining},{xp:325,tier:2,nextXP:500,remaining:175});
+});
+test('progression unlocks use prerequisite XP and optional mastery ranks',()=>{
+  const profile=emptyProfile();
+  assert.ok(PROGRESSION_NODES.length>=30);assert.equal(isProgressionUnlocked('fundamentals-strings',profile),true);
+  assert.equal(isProgressionUnlocked('tabs-reading',profile),false);
+  profile.skillXP['fundamentals-strings']=79;assert.equal(isProgressionUnlocked('tabs-reading',profile),false);
+  profile.skillXP['fundamentals-strings']=80;assert.equal(isProgressionUnlocked('tabs-reading',profile),true);
+  profile.skillXP['songs-performance']=499;assert.equal(isProgressionUnlocked('songs-mastery',profile),false);
+  profile.skillXP['songs-performance']=500;assert.equal(isProgressionUnlocked('songs-mastery',profile),true);
+});
+test('lesson XP rewards reflect length and accuracy and stop after the daily limit',()=>{
+  const lesson=SKILLS[0],at=Date.UTC(2026,8,28,12),session={rule:{bpm:80,tier:1}};
+  const profile=emptyProfile(),short=awardPracticeXP(profile,lesson,{...session,total:12},{total:12,accuracy:90,passed:true},{history:[],at});
+  assert.ok(short.xp>0);assert.ok(short.targets.includes('fundamentals-strings'));assert.ok(!short.targets.includes('tabs-reading'));
+  assert.equal(profile.xp,short.xp);assert.equal(profile.skillXP['fundamentals-strings'],short.xp);assert.equal(Number(profile.skillXP['tabs-reading'])||0,0);
+  const long=calculatePracticeXP({lesson,session:{...session,total:64},result:{total:64,accuracy:98,passed:true},history:[],at});
+  const weak=calculatePracticeXP({lesson,session:{...session,total:64},result:{total:64,accuracy:75,passed:true},history:[],at});
+  assert.ok(long.xp>short.xp);assert.ok(long.xp>weak.xp);
+  assert.equal(calculatePracticeXP({lesson,session:{...session,total:8},result:{total:8,accuracy:100,passed:false},history:[],at}).xp,0);
+  const repeats=Array.from({length:3},()=>({activityKey:'tabs-0',accuracy:100,at}));
+  assert.equal(calculatePracticeXP({lesson,session:{...session,total:64},result:{total:64,accuracy:100,passed:true},history:repeats,at}).reason,'daily-limit');
+});
+test('lesson XP only reaches progression skills whose prerequisites are open',()=>{
+  const profile=emptyProfile(),lesson=SKILLS[0],session={rule:{bpm:80,tier:1}},at=Date.UTC(2026,8,28,12);
+  profile.skillXP['fundamentals-strings']=79;
+  const first=awardPracticeXP(profile,lesson,{...session,total:40},{total:40,accuracy:100,passed:true},{history:[],at});
+  assert.deepEqual(first.targets,['fundamentals-strings']);assert.ok(profile.skillXP['fundamentals-strings']>80);assert.equal(Number(profile.skillXP['tabs-reading'])||0,0);
+  const next=awardPracticeXP(profile,lesson,{...session,total:40},{total:40,accuracy:100,passed:true},{history:[],at:at+86400000});
+  assert.ok(next.targets.includes('tabs-reading'));assert.ok(profile.skillXP['tabs-reading']>0);
+});
+test('normal lesson generation scales to difficulty and varies short motifs musically',()=>{
+  assert.deepEqual(RULES.map(practiceLengthForRule),[32,48,72,96]);
+  const base=SKILLS[0].sequence,sequence=generatePracticeSequence(SKILLS[0],32),signature=events=>events.map(event=>event.midi).join(',');
+  assert.equal(sequence.length,32);assert.notEqual(signature(sequence.slice(0,4)),signature(sequence.slice(4,8)));
+  assert.ok(sequence.some((event,index)=>index>=4&&base.some(note=>note.midi===event.midi&&note.string!==event.string)),'later phrases should use alternate string positions when the pitch allows it');
+  assert.equal(makeSession(SKILLS[0],RULES[0],emptyProfile(),0).total,32);
+  assert.equal(makeSession({...SKILLS[0],libraryPractice:true},RULES[0],emptyProfile(),0).total,12,'curated library packs keep their authored length');
+});
+test('endless practice appends varied blocks until the player stops',()=>{
+  const session=makeSession(SKILLS[0],RULES[0],emptyProfile(),0,3000,{endless:true});
+  assert.equal(session.total,32);assert.equal(session.endless,true);
+  for(let index=0;index<32;index++)assert.equal(attempt(session,true,3000+index*200),true);
+  assert.equal(session.ended,false);assert.equal(session.index,32);assert.equal(session.total,64);assert.equal(session.events.length,64);
+});
+test('legacy profiles migrate rank progress into XP without discarding history',()=>{
+  const migrated=sanitizeProfile({version:1,skills:{'tabs-0':2,'tabs-1':1,'chords-0':3},xp:320,sessions:8,history:[{title:'Old run',rank:'Silver',accuracy:84,passed:true,at:10}]});
+  assert.equal(migrated.version,3);assert.equal(migrated.xp,320);assert.equal(migrated.sessions,8);
+  assert.equal(migrated.skills['tabs-1'],1);assert.equal(migrated.skillXP['tabs-reading'],250);assert.equal(migrated.skillXP['fundamentals-strings'],250);
+  assert.equal(migrated.history[0].title,'Old run');assert.equal(migrated.history[0].xpAwarded,0);
+  const saved=sanitizeProfile({...migrated,skillXP:{...migrated.skillXP,'scales-pentatonic':325}});
+  assert.equal(saved.skillXP['scales-pentatonic'],325);
 });
 test('top three buffs replace lower tiers and cap at 15%',()=>{
   const p=emptyProfile();p.skills={'tabs-0':4,'tabs-1':4,'tabs-2':4,'tabs-3':4};assert.equal(boostTotal(p),15);
   p.skills={'tabs-0':1,'chords-0':3};assert.equal(boostTotal(p),4);
+});
+test('new progression mastery equips arena bonuses and stores completed Echo challenges',()=>{
+  const profile=emptyProfile();profile.skillXP={'fundamentals-strings':500,'scales-pentatonic':900,'chords-open':250};
+  assert.equal(boostTotal(profile),10);
+  const saved=sanitizeProfile({...profile,masteryChallenges:{'scales-pentatonic':true,'unknown-skill':true}});
+  assert.equal(saved.masteryChallenges['scales-pentatonic'],true);assert.equal(saved.masteryChallenges['unknown-skill'],undefined);
 });
 test('accuracy gates ignore buffs and Diamond also requires beating the AI',()=>{
   const score=(hits,boost=0)=>scoreResult({hits,total:100,attempts:100,mode:'battle',boost,ai:94,threshold:90});

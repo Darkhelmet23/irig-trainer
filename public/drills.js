@@ -33,10 +33,23 @@ export function createDrill(kind,options={}){
     return {id:'drill-chords',title:`Chord transitions · ${progression}`,track:'chords',requires:null,sequence:Array.from({length:4},()=>names).flat().map(chord=>({chord})),guide:'Keep your strumming hand moving and change shape on each beat. The app records chord accuracy and transitions per minute; it does not grade strum direction or fingering.'};
   }
   if(kind==='scale'){
-    const name=options.scale||'Minor pentatonic',steps=STEPS[name]||STEPS['Minor pentatonic'],root=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].indexOf(options.root||'E'),classes=new Set(steps.map(n=>(n+root)%12)),positions=[];
-    for(let string=6;string>=1;string--)for(let fret=0;fret<=12;fret++){const midi=TUNING[string-1]+fret;if(classes.has(midi%12))positions.push({string,fret,midi});}
-    positions.sort((a,b)=>a.midi-b.midi||a.string-b.string);const ascent=positions.slice(0,12),sequence=[...ascent,...ascent.slice().reverse()].map((p,i)=>event(p.string,p.fret,i));
-    return timed({id:'drill-scale',title:`${options.root||'E'} ${name} scale`,track:'tabs',requires:null,scaleName:`${options.root||'E'} ${name}`,fretboardPattern:ascent,sequence,guide:`Play the ${options.root||'E'} ${name} shape in ascending and descending order. Keep each note even and watch the fretboard map.`},90);
+    const roots=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],rootName=roots.includes(options.root)?options.root:'E';
+    const name=STEPS[options.scale]?options.scale:'Minor pentatonic',steps=STEPS[name],root=roots.indexOf(rootName),classes=new Set(steps.map(n=>(n+root)%12));
+    const requestedPosition=Math.max(1,Math.min(5,Math.trunc(Number(options.position)||1))),shift=!!options.positionShift,position=shift&&requestedPosition===5?4:requestedPosition,shiftedPosition=shift?position+1:position;
+    const lineAt=box=>{const low=(box-1)*2,high=low+4,notes=[];for(let string=6;string>=1;string--)for(let fret=low;fret<=Math.min(12,high);fret++){const midi=TUNING[string-1]+fret;if(classes.has(midi%12))notes.push({string,fret,midi});}return notes.sort((a,b)=>a.midi-b.midi||a.string-b.string);};
+    const first=lineAt(position),second=shift?lineAt(shiftedPosition).filter(note=>note.midi>(first.at(-1)?.midi??-1)):[],line=[...first,...second];
+    const sequenceLength=Math.max(1,Math.min(4,Math.trunc(Number(options.sequenceLength)||1)));
+    let phrase=line;
+    if(sequenceLength>1){phrase=[];let group=0;for(let start=0;start<line.length;start+=sequenceLength-1){const notes=line.slice(start,start+sequenceLength);if(notes.length<sequenceLength)break;if(group++%2)notes.reverse();phrase.push(...notes);}}
+    const direction=['ascending','descending','up-down'].includes(options.direction)?options.direction:'up-down';
+    if(direction==='descending')phrase=phrase.slice().reverse();
+    else if(direction==='up-down')phrase=[...phrase,...phrase.slice().reverse().slice(1)];
+    const sequence=phrase.map((p,i)=>event(p.string,p.fret,i));
+    const tempoTargetBpm=Math.max(40,Math.min(180,Number(options.bpm)||72)),tempoLadder=!!options.tempoLadder,bpm=tempoLadder?Math.round(tempoTargetBpm*.6):tempoTargetBpm;
+    const positionText=shift?` · positions ${position}–${shiftedPosition}`:` · position ${position}`;
+    const sequenceText=sequenceLength>1?` using ${sequenceLength}-note sequences`:'';
+    const directionText=direction==='descending'?'descending':direction==='ascending'?'ascending':'ascending and descending';
+    return timed({id:'drill-scale',title:`${rootName} ${name}${positionText}`,track:'tabs',requires:null,scaleName:`${rootName} ${name}`,position,sequenceLength,direction,positionShift:shift,tempoTarget:tempoLadder,tempoLadder,tempoTargetBpm,tempoStage:0,tempoStages:tempoLadder?[.6,.7,.8,.9,1]:[],adaptiveTempo:tempoLadder,fretboardPattern:[...first,...second],sequence,guide:`Play ${directionText}${sequenceText} in ${rootName} ${name}. ${shift?`Connect positions ${position} and ${shiftedPosition}. `:''}${tempoLadder?'Begin at 60% tempo and move up only after you meet the accuracy goal. ':'Keep each note even and listen for the scale color. '}Follow the fretboard map.`},bpm);
   }
   if(kind==='technique'){
     const source=SKILLS.find(s=>s.technique)||SKILLS.find(s=>s.title==='Alternate Picking')||SKILLS[10];

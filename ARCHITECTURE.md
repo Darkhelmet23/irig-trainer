@@ -1,0 +1,17 @@
+# iRig Trainer architecture
+
+## Main modules
+
+- `public/app.js` starts the browser app and connects shared state to page and session services. `navigation.js` owns route changes; `storage.js` wraps localStorage reads and writes.
+- `skill-tree-ui.js` renders the branched XP map and node details; `progression-library-ui.js` builds node-filtered lessons and scale options. `lesson-library-ui.js` and `setup-ui.js` render the library and input pages. `song-import-ui.js` renders imported-score controls, binds import and practice actions, and builds score-note views. `lesson-session-ui.js` renders lesson headings and skill previews.
+- `public/curriculum.js` defines the built-in tab/chord lessons, chord shapes, rank rules, and skill lookup. `drills.js` builds fretboard, ear, chord, scale, technique, and warm-up exercises; `repertoire.js` supplies the practice collection.
+- `public/progression.js` defines six skill branches, practice-to-skill mapping, XP unlock requirements, and Bronze/Silver/Gold/Diamond thresholds. `profile-store.js` switches and persists isolated demo/live profiles; `engine.js` migrates and validates profiles, creates sessions, grades attempts, and awards capped XP. `lesson-patterns.js` creates longer varied practice blocks. `practice-hub.js` renders history, goals, achievements, and heatmaps; `session-coach.js` analyzes runs and recommends practice.
+- `public/audio.js` owns browser audio capture, pitch estimation, attack detection, and chord recognition. `input-diagnostics.js`, `session-controls.js`, `metronome.js`, and `tunings.js` support setup and input tools.
+- `public/songs.js`, `score-practice.js`, `song-difficulty.js`, and `library-tools.js` manage the browser song library and imported-score practice. `score-worker.js` parses Guitar Pro/MusicXML through alphaTab; the local `score-import.js` endpoint bounds and hosts parsing.
+- `public/service-worker.js` caches the offline app shell. `public/style.css` holds component layouts; `theme.css` sets the high-contrast charcoal palette and mastery colors.
+
+## Data and practice flow
+
+- Demo and live profiles are stored separately in browser `localStorage` (`irig-demo` and `irig-live`). `engine.js` sanitizes profiles; profiles contain total XP, per-skill `skillXP`, legacy rank records, Echo challenge wins, and session history. Version-1/2 profiles migrate to version 3, mapping existing ranks to XP and preserving history. App settings and custom packs use separate localStorage keys through `storage.js`. Imported scores are stored in IndexedDB by `songs.js`.
+- Built-in lesson patterns and play rules live in `curriculum.js`; generated drills live in `drills.js`; progression nodes and XP/mastery rules live in `progression.js`. Imported scores become timed events in `songs.js` and can be practiced by track and section.
+- A lesson is converted into session events by `engine.js`. `app.js` schedules guided/flow/battle prompts, compares guitar input to the active event, and saves results. Built-in difficulty tiers generate 32/48/72/96 attacks; authored library packs keep their length. Optional endless practice adds another varied block until stopped. XP is awarded only to open progression nodes; Bronze/Silver/Gold/Diamond correspond to 100/250/500/900 XP. Gold unlocks Echo challenges, and challenge wins are saved per node. `session-coach.js` derives timing, passage, adaptive repeats, and scale tempo steps.

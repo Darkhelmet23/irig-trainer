@@ -88,7 +88,8 @@ function adaptiveSection(session){
 }
 
 export function nextPractice(lesson,session,result){
-  const options=session.practiceOptions||{};if(!lesson)return null;
+  const options=session.practiceOptions||{};if(!lesson||session.userStoppedEndless)return null;
+  if(session.skill.tempoLadder&&options.progressionPractice&&result.accuracy>=90){const stages=session.skill.tempoStages||[.6,.7,.8,.9,1],stage=Number(session.skill.tempoStage)||0;if(stage<stages.length-1){const nextStage=stage+1,bpm=Math.round(session.skill.tempoTargetBpm*stages[nextStage]),beat=60000/bpm;lesson.skill={...lesson.skill,bpm,speed:stages[nextStage],tempoStage:nextStage,sequence:lesson.skill.sequence.map((event,index)=>({...event,offsetMs:index*beat,durationMs:beat}))};lesson.loopRound=1;return `Great run · scale tempo ladder moving to ${Math.round(stages[nextStage]*100)}% (${bpm} BPM).`;}}
   if(session.skill.timed&&options.speedLadder&&result.accuracy>=90&&(session.skill.speed||1)<.995){const next=Math.min(1,Math.round(((session.skill.speed||1)+.1)*10)/10);lesson.skill=scaledSongSkill(session.skill,next);lesson.loopRound=1;return `Great run · speed ladder moving to ${Math.round(next*100)}%.`;}
   if(session.skill.timed&&options.loop&&session.loopRound<3&&result.accuracy>=75){lesson.loopRound=session.loopRound+1;return `A-B loop ${lesson.loopRound}/3 · keep the section moving.`;}
   if(options.adaptive&&result.accuracy<80){const focused=adaptiveSection(session);if(focused){lesson.skill=focused;lesson.options={...options,adaptive:false,loop:false,speedLadder:false};lesson.loopRound=1;return `Adaptive coach found a section to slow down and repeat.`;}}

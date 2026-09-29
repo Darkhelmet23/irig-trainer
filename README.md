@@ -1,6 +1,6 @@
 ﻿# iRig Trainer
 
-A playable guitar-training prototype with Tabs and Chords progression trees, live USB audio, guided lessons, scrolling practice, and an AI mastery challenge.
+A playable guitar-training app with six connected skill branches, live USB audio, guided lessons, scrolling practice, and an AI mastery challenge.
 
 ## Run
 
@@ -40,9 +40,13 @@ The app is a PWA and caches its trainer shell for offline practice after the fir
 
 ## Progression and scoring
 
-32 skills: 14 Tabs skills (including two scale studies) and 18 Chords skills. Bronze in a skill unlocks the next skill in that track. You can inspect locked skills, but cannot start them.
+The Skill Tree connects 32 skills across Fundamentals & Fretboard, Tabs & Melodies, Chords & Rhythm, Scales & Lead, Technique, and Songs & Performance. Select a node to see its mastery, prerequisites, and related lessons; start practice from the Lessons page. Branches unlock gradually from prerequisite skill XP and, for some paths, a minimum mastery rank.
 
-| Rank | Exercise | Pass requirement | Arena bonus |
+Bronze, Silver, Gold, and Diamond are mastery milestones inside each skill, reached at 100, 250, 500, and 900 skill XP. Eligible completed lessons award XP to their related unlocked skills. Awards account for accuracy, attack count, tempo/difficulty, and improvement; a run needs at least 12 scored attacks and 60% accuracy, and the same activity can award XP up to three times per day with diminishing returns. Repeated short failures cannot be used to farm mastery.
+
+Scale & Lead lessons cover major, natural minor, pentatonic, blues, and modes across roots, fretboard positions, ascending/descending paths, 2–4-note sequences, position shifts, and an accuracy-gated tempo ladder. Built-in practice grows with mastery: Bronze targets 32 attacks, Silver 48, Gold 72, and Diamond 96, using phrase variations. Endless mode is available for supported built-in lessons.
+
+| Mastery | Practice format | Pass requirement | Arena bonus |
 |---|---|---|---|
 | Bronze | Guided; waits for the correct note | 75% accuracy | +1% |
 | Silver | Scrolling, 70 BPM, ±350 ms | 80% accuracy | +2% |
@@ -51,7 +55,7 @@ The app is a PWA and caches its trainer shell for offline practice after the fir
 
 Guided accuracy = hits / max(target count, attempts). Wrong attempts count even though the exercise waits. Scrolling accuracy = hits / target count; a wrong note consumes that target, and late targets become misses. Accuracy is rounded to a whole percent. Each attack has equal weight. Skill-tree drills use one note per beat; imported songs retain their source note timing, durations, rests and ties. Rests and tied continuations are not scored as attacks.
 
-The three strongest skills automatically form your loadout; bonuses add to a maximum of 15%. A skill's new rank replaces its earlier bonus. Battle points = round(10 × accuracy × (1 + bonus / 100)). Bonuses never bypass accuracy requirements. Echo is a deterministic simulated opponent with a 940-point target, not a neural network or a live player. Ties do not win. Ranks must be earned in order, and replaying an earned rank does not farm XP.
+The three strongest mastered skills automatically form your loadout; bonuses add to a maximum of 15%. Battle points = round(10 × accuracy × (1 + bonus / 100)). Bonuses never bypass accuracy requirements. Echo is a deterministic simulated opponent with a 940-point target, not a neural network or a live player. Gold mastery opens Echo challenges for eligible skills; challenge wins are recorded per skill. Ties do not win.
 
 Demo and live profiles are stored separately in browser local storage. There are no accounts, cloud sync, multiplayer, or anti-cheat. Clearing browser data removes progress. Hiding the tab aborts an active attempt without awarding progress.
 

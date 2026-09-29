@@ -62,3 +62,14 @@ test('speed ladder advances only after the accuracy threshold',()=>{
   assert.equal(lesson.skill.speed,.7);
   assert.equal(nextPractice({skill:{speed:.6,timed:true},loopRound:1},session,{accuracy:89}),null);
 });
+
+test('scale tempo ladder starts at sixty percent and raises BPM after accurate rounds',()=>{
+  const skill=createDrill('scale',{root:'E',scale:'Minor pentatonic',tempoLadder:true,bpm:80});
+  const lesson={skill,options:{progressionPractice:true},loopRound:1},session={skill,practiceOptions:lesson.options,rule:{mode:'flow',bpm:skill.bpm}};
+  assert.equal(skill.bpm,48);assert.equal(skill.tempoStage,0);
+  assert.match(nextPractice(lesson,session,{accuracy:95}),/70% \(56 BPM\)/);
+  assert.equal(lesson.skill.tempoStage,1);assert.equal(lesson.skill.bpm,56);assert.equal(lesson.skill.sequence[1].offsetMs,60000/56);
+  session.skill=lesson.skill;assert.match(nextPractice(lesson,session,{accuracy:95}),/80% \(64 BPM\)/);
+  const paused={skill:createDrill('scale',{tempoLadder:true,bpm:80}),options:{progressionPractice:true},loopRound:1};
+  assert.equal(nextPractice(paused,{skill:paused.skill,practiceOptions:paused.options},{accuracy:89}),null);
+});

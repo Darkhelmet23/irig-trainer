@@ -28,9 +28,9 @@ test('progress dashboard tracks history, goals, and generated fretboard drills',
 test('session results summarize timing and offer an adaptive warm-up',async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto('/');await page.clock.install();
-  await page.getByRole('button',{name:/Play your first lesson/}).click();
+  await page.locator('#practice-related').click();await page.locator('[data-progression-lesson="tabs-0"]').click();
   await page.locator('#begin').click();await page.clock.runFor(4100);
-  for(let i=0;i<12;i++){await page.keyboard.press('Space');await page.clock.runFor(200);}
+  const total=Number((await page.locator('#live-progress').innerText()).split('/')[1]);for(let i=0;i<total;i++){await page.keyboard.press('Space');await page.clock.runFor(200);}
   await expect(page.locator('.session-coach')).toContainText('Session coach');
   await expect(page.locator('.session-coach')).toContainText('This guided or pitch-only run did not score timing');
   await page.locator('#result-warmup').click();
