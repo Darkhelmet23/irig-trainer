@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 488" role="img" aria-labelledby="wordmark-title">
+  <title id="wordmark-title">iRig Trainer</title>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M232 18C154 20 54 60 39 154c-8 51 19 105 50 162 36 66 83 129 120 153 13 9 27 9 40-1 42-33 100-112 135-191 27-61 46-115 22-167C376 45 292 17 232 18Z" fill="#111e29" stroke="#f4efdf" stroke-width="14"/>
+    <path d="M232 32C158 36 68 76 56 157c-7 45 20 99 48 151 35 64 78 120 107 143 8 6 15 6 23 0 37-30 91-104 123-176 25-56 41-104 20-150C354 74 284 33 232 32Z" fill="none" stroke="#54c9c5" stroke-width="3" opacity=".8"/>
+    <path d="M165 42 193 418M196 29 215 438M228 24 236 445M260 27 257 431M291 40 279 408" fill="none" stroke="#f4efdf" stroke-width="5" opacity=".86"/>
+    <path d="M101 125 359 125M77 192 355 192M89 259 329 259M118 326 301 326M157 388 270 388" fill="none" stroke="#d9a36b" stroke-width="8" opacity=".9"/>
+    <path d="M93 109 349 109M82 219 343 219M104 292 316 292M139 357 286 357" fill="none" stroke="#f4efdf" stroke-width="2.5" opacity=".62"/>
+    <path d="M117 311c18-31 49-40 76-25 24 13 30 41 15 64-16 25-46 35-71 23-28-13-36-37-20-62Z" fill="#1b5960" stroke="#f4efdf" stroke-width="7"/>
+    <circle cx="158" cy="337" r="26" fill="#54c9c5" stroke="#f4efdf" stroke-width="5"/>
+    <path d="M214 169c12-24 36-31 58-18 20 12 23 36 10 55-13 19-37 25-57 13-19-12-22-31-11-50Z" fill="#745238" stroke="#f4efdf" stroke-width="6"/>
+    <circle cx="245" cy="188" r="22" fill="#efbd62" stroke="#fff0cf" stroke-width="5"/>
+    <path d="M269 91c10-20 29-26 47-15 16 10 19 29 8 45-11 16-30 20-46 10-15-9-18-25-9-40Z" fill="#733f3d" stroke="#f4efdf" stroke-width="5"/>
+    <circle cx="296" cy="107" r="18" fill="#f18a65" stroke="#fff0cf" stroke-width="5"/>
+    <path d="m371 79 8 20 20 8-20 8-8 20-8-20-20-8 20-8Z" fill="#efc761"/>
+    <circle cx="99" cy="169" r="6" fill="#efc761"/><circle cx="352" cy="250" r="7" fill="#f18a65"/>
+    <path d="M457 419c120-24 260-24 413-2" fill="none" stroke="#f18a65" stroke-width="9"/>
+    <path d="M484 434c113-12 232-12 343 1" fill="none" stroke="#f18a65" stroke-width="3" opacity=".72"/>
+    <circle cx="868" cy="312" r="6" fill="#54c9c5"/><circle cx="848" cy="81" r="5" fill="#efbd62"/>
+  </g>
+  <text x="452" y="222" fill="#f4efdf" font-family="Segoe Print, Bradley Hand, Comic Sans MS, cursive" font-size="172" font-style="italic" font-weight="600" letter-spacing="-11">iRig</text>
+  <text x="464" y="366" fill="#f18a65" font-family="Segoe Print, Bradley Hand, Comic Sans MS, cursive" font-size="132" font-style="italic" font-weight="600" letter-spacing="-7">Trainer</text>
+</svg>

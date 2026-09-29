@@ -14,7 +14,7 @@ export function songTempoLabel(originalBpm, speed) {
 export function scaleSongSkill(skill, newSpeed) {
   const oldSpeed = Math.max(0.01, Number(skill.speed) || 1), speed = Math.max(0.25, Math.min(1.25, Number(newSpeed) || 0.6)), ratio = oldSpeed / speed;
   return { ...skill, speed, bpm: Math.round((Number(skill.originalBpm) || skill.bpm / oldSpeed) * speed),
-    tempos: skill.tempos?.map(tempo => ({ ...tempo, offsetMs: tempo.offsetMs * ratio, bpm: tempo.bpm * ratio })),
+    tempos: skill.tempos?.map(tempo => ({ ...tempo, offsetMs: tempo.offsetMs * ratio, bpm: tempo.bpm * speed / oldSpeed })),
     sequence: skill.sequence.map(event => ({ ...event, offsetMs: event.offsetMs * ratio, durationMs: event.durationMs * ratio })) };
 }
 

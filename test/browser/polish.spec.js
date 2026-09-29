@@ -5,6 +5,15 @@ test('startup shows the brand while the app initializes without adding an artifi
   await page.goto('/#tree',{waitUntil:'commit'});await expect(page.locator('.startup-splash')).toBeVisible();await expect(page.locator('.startup-splash')).toHaveCount(0);
 });
 
+test('vector wordmark loads sharply and fits the sidebar at desktop, tablet, and mobile widths',async({page})=>{
+  await page.goto('/#tree');
+  for(const viewport of [{width:1920,height:1080},{width:1024,height:800},{width:390,height:844}]){
+    await page.setViewportSize(viewport);
+    await page.screenshot({path:'test-results/brand-' + viewport.width + '.png'});
+    const logo=await page.locator('.brand-logo').evaluate(image=>({complete:image.complete,naturalWidth:image.naturalWidth,rect:image.getBoundingClientRect().toJSON(),sidebar:document.querySelector('.sidebar').getBoundingClientRect().toJSON(),pageWidth:document.documentElement.scrollWidth}));
+    expect(logo.complete).toBe(true);expect(logo.naturalWidth).toBeGreaterThan(0);expect(logo.rect.width).toBeLessThanOrEqual(logo.sidebar.width);expect(logo.pageWidth).toBeLessThanOrEqual(viewport.width);
+  }
+});
 test('a new player can onboard, practice Fundamentals, earn XP, and open the next skill',async({page})=>{
   await page.clock.install();await page.goto('/#tree');
   await expect(page.locator('.onboarding-panel h2')).toHaveText('Welcome to iRig Trainer.');
@@ -25,11 +34,15 @@ test('imported song practice shows Bronze tempo, a two-bar count-in, a frozen la
   await page.clock.install();await page.goto('/#library');
   await page.evaluate(async()=>{
     const request=indexedDB.open('irig-song-library',1);
-    await new Promise((resolve,reject)=>{request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('songs'))request.result.createObjectStore('songs',{keyPath:'id'});};request.onerror=()=>reject(request.error);request.onsuccess=()=>{const db=request.result,tx=db.transaction('songs','readwrite'),events=Array.from({length:16},(_,i)=>({offsetMs:i*180,durationMs:180,measure:Math.floor(i/8)+1,notes:[{midi:64+i%5,string:1,fret:i%5,tie:false,dead:false}],techniques:[],rest:false}));tx.objectStore('songs').put({id:'tempo-fixture',title:'Tempo Study',artist:'Test',filename:'study.gp5',format:'gp5',tempo:190,tempos:[{offsetMs:0,bpm:190}],durationMs:2880,tracks:[{id:'lead',name:'Lead guitar',playable:true,isPercussion:false,tuning:[40,45,50,55,59,64],capo:0,transposition:0,events,techniques:[],hasPositions:true,missingPositions:0}],warnings:[]});tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);};});
+    await new Promise((resolve,reject)=>{request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('songs'))request.result.createObjectStore('songs',{keyPath:'id'});};request.onerror=()=>reject(request.error);request.onsuccess=()=>{const db=request.result,tx=db.transaction('songs','readwrite'),events=Array.from({length:16},(_,i)=>({offsetMs:i*180,durationMs:180,measure:Math.floor(i/8)+1,notes:[{midi:64+i%5,string:1,fret:i%5,tie:false,dead:false}],techniques:[],rest:false}));tx.objectStore('songs').put({id:'tempo-fixture',title:'Tempo Study',artist:'Test',filename:'study.gp5',format:'gp5',tempo:190,tempos:[{offsetMs:0,bpm:190},{offsetMs:1440,bpm:140},{offsetMs:2160,bpm:230}],durationMs:2880,tracks:[{id:'lead',name:'Lead guitar',playable:true,isPercussion:false,tuning:[40,45,50,55,59,64],capo:0,transposition:0,events,techniques:[],hasPositions:true,missingPositions:0}],warnings:[]});tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);};});
   });
   await page.reload();await page.locator('[data-open-song="tempo-fixture"]').click();await page.locator('#song-guided').click();
   await expect(page.locator('.song-prestart-summary')).toContainText('190 BPM');
   await expect(page.locator('#song-practice-tempo')).toHaveText('114 BPM · 60%');
+  for(const [speed,bpm,percent]of[['0.7',133,70],['0.85',162,85],['1',190,100],['0.6',114,60]]){
+    await page.locator('#song-practice-speed').selectOption(speed);
+    await expect(page.locator('#song-practice-tempo')).toHaveText(`${bpm} BPM \u00b7 ${percent}%`);
+  }
   await expect(page.locator('#song-count-in')).toHaveValue('2');
   await page.locator('#song-practice-speed').selectOption('0.5');await page.locator('#song-practice-mode').selectOption('scrolling');
   await page.locator('#begin').click();

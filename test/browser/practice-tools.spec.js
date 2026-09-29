@@ -86,6 +86,15 @@ test('offline install caches the trainer shell and progress dashboard',async({pa
   await page.goto('/');
   await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
   expect(await page.evaluate(()=>navigator.serviceWorker.controller!==null)).toBe(true);
+  const cachedAssets=await page.evaluate(async()=>Object.fromEntries(await Promise.all(
+    ['/brand-wordmark.svg','/song-practice-ui.js'].map(async path=>{
+      const response=await caches.match(new URL(path,location.href).href);
+      return [path,response?{ok:response.ok,type:response.headers.get('content-type')}:null];
+    })
+  )));
+  expect(cachedAssets['/brand-wordmark.svg'].ok).toBe(true);
+  expect(cachedAssets['/brand-wordmark.svg'].type).toContain('image/svg+xml');
+  expect(cachedAssets['/song-practice-ui.js']).toMatchObject({ok:true});
   await page.context().setOffline(true);
   await page.goto('/#progress');
   await expect(page.getByRole('heading',{name:'Progress & practice tools'})).toBeVisible();

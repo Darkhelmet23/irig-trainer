@@ -2,13 +2,13 @@
 
 ## Modules
 
-- `public/app.js` is the browser entry point and connects navigation, profile state, lesson setup, live input, session timing, and result rendering. `navigation.js`, `storage.js`, `profile-store.js`, `onboarding.js`, and the focused UI modules keep routing, persistence, setup, and page rendering separate.
+- `public/app.js` is the browser entry point and coordinates navigation, profile state, lesson setup, live input, session timing, and results. `song-practice-ui.js` renders imported-song preparation and tempo/count-in controls; `navigation.js`, `storage.js`, `profile-store.js`, `onboarding.js`, and the other focused UI modules own routing, persistence, setup, and page rendering.
 - `public/style.css` is the single stylesheet and owns the design tokens, components, responsive rules, and brand treatments. `skill-tree-ui.js` owns the six-branch tree layout; its `SKILL_TREE_GEOMETRY` values also set the CSS node dimensions.
 - `public/progression.js` maps practice to skills, gates nodes by prerequisite skill XP/rank, and defines mastery milestones. `public/engine.js` sanitizes/migrates profiles, builds sessions, grades attempts, and awards capped practice XP.
 - `public/curriculum.js` defines built-in tab/chord lessons and authored phrases. `drills.js` builds scale, fretboard, chord, ear, technique, and warm-up lessons; `lesson-patterns.js` combines authored phrases with light variation.
 - `public/audio.js` captures browser audio and detects pitch, onsets, and chords. `input-diagnostics.js`, `tunings.js`, `metronome.js`, and `session-controls.js` support device setup and practice controls.
-- `public/songs.js` stores imported songs in IndexedDB and creates track/section lessons. `score-worker.js` parses Guitar Pro and MusicXML through alphaTab; `score-import.js` handles server-side imports. `song-tempo.js` scales imported tempos by mastery tier and proposes (but does not apply) faster practice speeds.
-- `public/service-worker.js` caches the app shell for offline use. Brand sources are `brand-wordmark.jpg`, `brand-mark.svg`, `brand-mark-mono.svg`, and `brand-icon.svg`.
+- `public/songs.js` stores imported songs in IndexedDB and creates track/section lessons. `score-worker.js` parses Guitar Pro and MusicXML through alphaTab; `score-import.js` handles server-side imports. `song-tempo.js` scales event timing by old/new speed and tempo-change BPM metadata by new/old speed, then proposes (but does not apply) faster practice speeds.
+- `public/service-worker.js` caches the app shell for offline use. Brand sources are the transparent vector `brand-wordmark.svg`, `brand-mark.svg`, `brand-mark-mono.svg`, and `brand-icon.svg`. The service worker precaches these assets with the app shell.
 
 ## Progress and scoring
 

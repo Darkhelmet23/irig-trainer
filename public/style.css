@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* Design tokens */
 :root {
   color-scheme: dark;
   --bg: #0d1420;
@@ -9,6 +12,7 @@
   --line-soft: #2b3944;
   --text: #f4efdf;
   --muted: #bdc6c9;
+  --secondary: #d5dfe1;
   --disabled: #8f9ba0;
   --accent: #52c8c5;
   --accent-hover: #75d8d2;
@@ -48,8 +52,7 @@
   --tree-panel: #182530;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
+/* Base reset and typography */
 * {
   box-sizing:border-box;
 }
@@ -107,6 +110,7 @@ p {
   font-weight:700;
 }
 
+/* Sidebar identity and navigation */
 .brand {
   display: flex;
   align-items: center;
@@ -115,21 +119,6 @@ p {
   text-decoration: none;
   color: var(--text);
   margin-bottom: 16px;
-}
-
-.brand-mark {
-  font-size:33px;
-  letter-spacing:-3px;
-  color:var(--accent);
-  margin-right:4px;
-}
-
-.brand small {
-  display:block;
-  font:8px 'DM Sans',sans-serif;
-  letter-spacing:2px;
-  margin-top:5px;
-  color:var(--muted);
 }
 
 .nav-item>span {
@@ -149,7 +138,7 @@ p {
   width:5px;
   height:5px;
   border-radius:50%;
-  background:var(--orange);
+  background:var(--accent-secondary);
   margin-left:auto;
 }
 
@@ -228,6 +217,7 @@ p {
   margin-left:auto;
 }
 
+/* Application shell and page layout */
 .workspace {
   margin-left:234px;
 }
@@ -286,7 +276,7 @@ p {
 
 .stat .label {
   font-size:10px;
-  color:#9da99a;
+  color:var(--muted);
 }
 
 .stat .value {
@@ -455,71 +445,6 @@ p {
   background:#262b31;
 }
 
-.tree-intro {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  font-size:10px;
-  color:var(--muted);
-  margin:23px 0 25px;
-}
-
-.tree-intro strong {
-  font-size:10px;
-  letter-spacing:1.5px;
-  color:#a7b7bd;
-}
-
-.tree-grid {
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:25px 15px;
-  position:relative;
-}
-
-.skill-card {
-  border:1px solid #30382f;
-  border-radius:9px;
-  background:#191b1f;
-  min-height:149px;
-  text-align:left;
-  padding:17px 14px;
-  position:relative;
-  display:flex;
-  flex-direction:column;
-  align-items:flex-start;
-  transition:transform .2s,border-color .2s;
-}
-
-.skill-card:before {
-  content:'';
-  position:absolute;
-  top:-26px;
-  height:25px;
-  left:50%;
-  width:1px;
-  background:var(--line);
-}
-
-.skill-card:nth-child(-n+3):before {
-  display:none;
-}
-
-.skill-card.available {
-  border-color:#507f88;
-  background:linear-gradient(140deg,#243137,#1d2229);
-}
-
-.skill-card:hover {
-  transform:translateY(-3px);
-  border-color:#74939a;
-}
-
-.skill-card.locked {
-  background:#15161a;
-  color:#82907e;
-}
-
 .node-icon {
   border:1px solid #364249;
   background:#222a30;
@@ -531,37 +456,6 @@ p {
   color:#8da4ad;
   font:15px 'Space Grotesk';
   margin-bottom:13px;
-}
-
-.available .node-icon {
-  background:var(--accent);
-  color:#1b2a30;
-  border-color:var(--accent);
-}
-
-.node-lock {
-  position:absolute;
-  right:14px;
-  top:17px;
-  color:#64715f;
-  font-size:10px;
-}
-
-.skill-card strong {
-  font-size:11px;
-  line-height:1.4;
-}
-
-.node-caption {
-  font-size:9px;
-  color:#778573;
-  margin-top:6px;
-}
-
-.node-ranks {
-  display:flex;
-  gap:4px;
-  margin-top:12px;
 }
 
 .detail-card {
@@ -655,6 +549,7 @@ p {
   padding:6px 10px;
 }
 
+/* General panels, forms, and cards */
 .page-panel {
   background:var(--panel);
   border:1px solid var(--line);
@@ -845,6 +740,7 @@ input[type=range] {
   margin:20px 0;
 }
 
+/* Lesson dialog and session layout */
 dialog {
   background:#17171e;
   color:var(--text);
@@ -1122,7 +1018,7 @@ dialog::backdrop {
 }
 
 .notice {
-  color:var(--orange);
+  color:var(--accent-secondary);
   font-size:11px;
   line-height:1.7;
 }
@@ -1151,13 +1047,7 @@ dialog::backdrop {
     padding-top:45px;
   }
 
-  .tree-grid {
-    gap:28px 20px;
-  }
 
-  .skill-card {
-    min-height:159px;
-  }
 }
 
 @media(max-width:1150px) {
@@ -1187,13 +1077,7 @@ dialog::backdrop {
     gap:17px;
   }
 
-  .tree-grid {
-    grid-template-columns:repeat(2,minmax(0,1fr));
-  }
 
-  .skill-card:nth-child(3):before {
-    display:block;
-  }
 
   .stat {
     padding:0 17px;
@@ -1278,6 +1162,7 @@ dialog::backdrop {
   box-shadow:0 0 0 2px #83e6ef33;
 }
 
+/* Song library and score import */
 .song-import {
   margin-bottom:24px;
   background:linear-gradient(135deg,#262b37,#191822);
@@ -1351,7 +1236,7 @@ dialog::backdrop {
   position:absolute;
   left:10px;
   top:-9px;
-  color:#8d998f;
+  color:var(--muted);
   font:10px monospace;
 }
 
@@ -1417,7 +1302,7 @@ dialog::backdrop {
   transform:translateX(-50%);
   font-size:9px;
   white-space:nowrap;
-  color:var(--orange);
+  color:var(--accent-secondary);
 }
 
 .riff-arcade {
@@ -1706,7 +1591,7 @@ dialog::backdrop {
 
 .mini-fret-row>b,.mini-fret-row>span {
   height:25px;
-  border:1px solid #465448;
+  border:1px solid var(--line);
   display:grid;
   place-items:center;
   font-size:9px;
@@ -1720,6 +1605,7 @@ dialog::backdrop {
   font-weight:700;
 }
 
+/* Practice stage and controls */
 .practice-modes,.practice-controls {
   display:flex;
   flex-wrap:wrap;
@@ -1739,7 +1625,7 @@ dialog::backdrop {
 .beat-light {
   width:12px;
   height:12px;
-  background:#374339;
+  background:var(--line-soft);
   border-radius:50%;
   display:inline-block;
   vertical-align:middle;
@@ -1907,6 +1793,7 @@ dialog::backdrop {
   color:var(--accent);
 }
 
+/* Session coaching and practice history */
 .session-coach {
   margin-top:24px;
   text-align:left;
@@ -2114,26 +2001,11 @@ dialog::backdrop {
 
 @media(max-width:980px) {
 
-
-  .brand>span:last-child,.nav-caption,.nav-item b,.nav-dot,.sidebar-bottom {
+.brand>span:last-child,.nav-caption,.nav-item b,.nav-dot,.sidebar-bottom {
     display:none;
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  .detail-column {
+.detail-column {
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:15px;
@@ -2155,13 +2027,7 @@ dialog::backdrop {
     margin-top:12px;
   }
 
-  .tree-grid {
-    grid-template-columns:repeat(3,minmax(0,1fr));
-  }
 
-  .skill-card:nth-child(3):before {
-    display:none;
-  }
 
   .hero-art {
     min-height:180px;
@@ -2215,9 +2081,7 @@ dialog::backdrop {
     max-width:100%;
   }
 
-
-
-  .nav-caption {
+.nav-caption {
     display: none;
   }
 
@@ -2225,30 +2089,13 @@ dialog::backdrop {
     display: none;
   }
 
-
-
-  .nav-item b {
+.nav-item b {
     display: none;
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-  .sidebar-bottom {
+.sidebar-bottom {
     display: none;
   }
-
-
-
 
 }
 
@@ -2270,6 +2117,7 @@ dialog::backdrop {
   max-width:720px;
 }
 
+/* Progress dashboard and Skill Tree */
 .progression-summary {
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
@@ -2727,6 +2575,7 @@ dialog::backdrop {
   color:#bdc7cc;
 }
 
+/* Lessons library and scale practice */
 .practice-lesson-grid {
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
@@ -3018,7 +2867,7 @@ body {
 }
 
 p,.muted,.tiny,.format-tags,.song-facts,.song-import p,.library-card p,.support-card p {
-  color:#b0bbc2;
+  color:var(--muted);
 }
 
 small,.tiny {
@@ -3043,6 +2892,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible {
   box-shadow: 0 0 0 3px #74dfed30;
 }
 
+/* Sidebar, navigation, and global control theme */
 .sidebar {
   width: 234px;
   position: fixed;
@@ -3092,11 +2942,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible {
   transform: translateX(2px);
 }
 
-.brand-light {
-  font-weight: 400;
-  color: #e0e0e6;
-}
-
 .topbar {
   height: 79px;
   border-bottom: 1px solid var(--line);
@@ -3116,7 +2961,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible {
 .input-pill {
   padding: 10px 13px;
   background: #1a2329;
-  border: 1px solid #303c42;
+  border: 1px solid #46535b;
   border-radius: 6px;
   display: flex;
   gap: 9px;
@@ -3148,9 +2993,10 @@ main {
   color: var(--accent);
 }
 
+/* Buttons and form controls */
 .outline-btn,.subtle-btn {
   background: #171e23;
-  border: 1px solid #3b443a;
+  border: 1px solid #4a5861;
   border-radius: 6px;
   padding: 11px 15px;
   font-size: 12px;
@@ -3180,12 +3026,13 @@ main {
 }
 
 .primary:hover {
-  background: #9decf5;
+  background: var(--accent-hover);
   color: #101118;
   transform: translateY(-1px);
 }
 
-.page-panel,.detail-card,.support-card,.stats,.library-card,.mode-banner,.song-import,.score-practice-options {
+/* Panel and card surfaces */
+.page-panel,.detail-card,.stats,.mode-banner,.song-import,.score-practice-options {
   border-color:#39464f;
 }
 
@@ -3204,7 +3051,7 @@ main {
 .mode-banner {
   padding: 10px 14px;
   background: #1f1d29;
-  border: 1px solid #304b4b;
+  border: 1px solid #42505c;
   border-radius: 6px;
   display: flex;
   justify-content: space-between;
@@ -3219,7 +3066,7 @@ main {
 .hero {
   display: grid;
   grid-template-columns: 1fr 40%;
-  border: 1px solid #374c53;
+  border: 1px solid #475e69;
   border-radius: 10px;
   background: radial-gradient(ellipse at 80% 50%,#2d3c46 0%,#20202b 52%,#1a1922 100%);
   margin-bottom: 30px;
@@ -3236,9 +3083,10 @@ main {
 }
 
 .stat .label,.stat .value span {
-  color:#b0bbc2;
+  color:var(--muted);
 }
 
+/* Lesson library cards */
 .library-card {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -3317,7 +3165,7 @@ input::placeholder,textarea::placeholder {
 }
 
 .xp-label {
-  color: var(--orange);
+  color: var(--accent-secondary);
   font-size: 12px;
 }
 
@@ -3344,31 +3192,10 @@ footer span {
   color: #aeb9bf;
 }
 
+/* Responsive header controls */
 @media(max-width:530px) {
-  .brand>span:last-child {
-    display:block;
-    font-size:18px;
-  }
 
-  .brand small {
-    display:none;
-  }
-
-  .brand-mark {
-    font-size:27px;
-  }
-
-
-
-
-
-
-
-
-
-
-
-  .xp-label {
+.xp-label {
     display:none;
   }
 
@@ -3385,9 +3212,7 @@ footer span {
     font-size:10px;
   }
 
-
-
-  .title-row h1 {
+.title-row h1 {
     font-size:30px;
   }
 
@@ -3430,14 +3255,7 @@ footer span {
     font-size:9px;
   }
 
-  .tree-grid {
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:23px 12px;
-  }
 
-  .skill-card:nth-child(3):before {
-    display:block;
-  }
 
   .detail-column {
     grid-template-columns:1fr;
@@ -3457,9 +3275,6 @@ footer span {
     font-size:18px;
   }
 
-  .tree-intro {
-    font-size:9px;
-  }
 
   .track-tab {
     padding:12px 15px;
@@ -3617,43 +3432,19 @@ footer span {
     gap:4px;
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  .nav-item.active {
+.nav-item.active {
     box-shadow: inset 0 -2px var(--accent);
   }
 
-
-
-
-
-
-
-
-
-
 }
 
+/* Brand sizing, custom icons, and tree states */
 .brand-logo {
   display: block;
   width: min(100%, 188px);
   height: auto;
   aspect-ratio: 920 / 488;
-  object-fit: cover;
+  object-fit: contain;
   border: 1px solid #f4efdf18;
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
@@ -3772,6 +3563,7 @@ footer span {
   vertical-align: middle;
 }
 
+/* Utilities and accessibility */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -3784,6 +3576,7 @@ footer span {
   border: 0;
 }
 
+/* Responsive layout refinements */
 @media(min-width:981px) and (max-width:1450px) {
 
   .progression-map-panel {
@@ -3834,9 +3627,11 @@ footer span {
   main { max-width: none; padding: 24px 20px; }
 }
 
+/* Startup placeholder */
 .startup-splash { display:flex; min-height:52vh; align-items:center; justify-content:center; gap:12px; color:var(--secondary); font-size:14px; font-weight:650; letter-spacing:.04em; }
 .startup-splash img { width:48px; height:48px; }
 
+/* Mobile navigation and tree viewport */
 @media(max-width:530px) {
   .sidebar { flex-wrap: wrap; padding: 8px 12px; gap: 8px 10px; }
   .brand { flex: 0 0 122px; width: 122px; }
@@ -3897,8 +3692,16 @@ footer span {
   .scale-builder select { min-width: 0; width: 100%; }
   .progression-map-heading::after { content:"Swipe sideways to explore all six branches"; color:var(--muted); font-size:11px; }
 }
-/* Song preparation, count-in, scale roots, and progression feedback */
-.song-prestart-summary { display:grid; gap:16px; margin:18px 0; padding:20px; border:1px solid var(--line); border-radius:var(--radius-lg); background:linear-gradient(135deg,#192833,#151f29); }
+/* Song practice preparation and progression feedback */
+.song-prestart-summary {
+  display:grid;
+  gap:16px;
+  margin:18px 0;
+  padding:20px;
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  background:linear-gradient(135deg,#192833,#151f29);
+}
 .prestart-heading h3 { margin:5px 0; color:var(--text); }
 .prestart-heading p { margin:0; color:var(--muted); }
 .song-prestart-facts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
@@ -3912,13 +3715,28 @@ footer span {
 .mini-fret-row>span.root-dot { background:var(--rank-gold); border-color:var(--rank-gold); color:#1c2225; box-shadow:0 0 7px #e9bb5c88; }
 .tempo-suggestion { color:var(--secondary); font-weight:600; }
 .xp-award-pulse { animation:xp-award .45s ease-out both; }
-@keyframes xp-award { from { opacity:.55; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-@media(max-width:700px) { .song-prestart-facts { grid-template-columns:1fr; } .song-prestart-controls { grid-template-columns:1fr; } }
-@media(prefers-reduced-motion:reduce) { .xp-award-pulse { animation:none; } }
-
-
-/* First-run setup and scale teaching */
-.onboarding-panel { position:relative; display:grid; gap:10px; margin:0 0 20px; padding:22px 24px; border:1px solid #35525e; border-radius:var(--radius-lg); background:linear-gradient(120deg,#1d2c36,#19232d 65%,#242334); box-shadow:var(--shadow-md); }
+@keyframes xp-award {
+  from { opacity:.55; transform:translateY(5px); }
+  to { opacity:1; transform:translateY(0); }
+}
+@media(max-width:700px) {
+  .song-prestart-facts,.song-prestart-controls { grid-template-columns:1fr; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .xp-award-pulse { animation:none; }
+}
+/* First-run onboarding */
+.onboarding-panel {
+  position:relative;
+  display:grid;
+  gap:10px;
+  margin:0 0 20px;
+  padding:22px 24px;
+  border:1px solid #35525e;
+  border-radius:var(--radius-lg);
+  background:linear-gradient(120deg,#1d2c36,#19232d 65%,#242334);
+  box-shadow:var(--shadow-panel);
+}
 .onboarding-panel h2 { margin:0; color:var(--text); font-size:23px; }
 .onboarding-panel p { max-width:760px; margin:0; color:var(--secondary); line-height:1.55; }
 .onboarding-actions { display:flex; align-items:end; flex-wrap:wrap; gap:10px; margin-top:6px; }
@@ -3926,6 +3744,8 @@ footer span {
 .onboarding-progress { display:flex; gap:5px; margin-top:5px; }
 .onboarding-progress i { width:21px; height:3px; border-radius:3px; background:var(--line); }
 .onboarding-progress i.active { background:var(--accent); }
+
+/* Scale previews and scale-lesson teaching */
 .scale-preview-panel { grid-column:1/-1; min-width:0; padding:14px; border:1px solid var(--line-soft); border-radius:var(--radius-md); background:#141d26; }
 .scale-preview-heading { display:flex; justify-content:space-between; flex-wrap:wrap; gap:7px; color:var(--text); }
 .scale-preview-heading span { color:var(--muted); font-size:12px; }
@@ -3938,4 +3758,10 @@ footer span {
 .scale-tempo-ladder>span.active { border-color:var(--accent); color:var(--text); background:#32c4c416; }
 .scale-tempo-ladder>span.complete { border-color:var(--rank-gold); color:var(--rank-gold); }
 .scale-tempo-ladder small { color:var(--muted); font-size:9px; }
-@media(max-width:600px) { .onboarding-panel { padding:18px; } .onboarding-panel h2 { font-size:20px; } .onboarding-actions { align-items:stretch; flex-direction:column; } .onboarding-actions>* { width:100%; } .scale-tempo-ladder { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:600px) {
+  .onboarding-panel { padding:18px; }
+  .onboarding-panel h2 { font-size:20px; }
+  .onboarding-actions { align-items:stretch; flex-direction:column; }
+  .onboarding-actions>* { width:100%; }
+  .scale-tempo-ladder { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
