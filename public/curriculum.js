@@ -10,6 +10,13 @@ export const CHORDS = {
 export const SHAPES = {Em:'0 2 2 0 0 0',E:'0 2 2 1 0 0',Am:'× 0 2 2 1 0',A:'× 0 2 2 2 0',D:'× × 0 2 3 2',C:'× 3 2 0 1 0',G:'3 2 0 0 0 3',F:'1 3 3 2 1 1',Bm:'× 2 4 4 3 2',E5:'0 2 2 × × ×',A5:'× 0 2 2 × ×',G5:'3 5 5 × × ×',D5:'× × 0 2 3 ×',E7:'0 2 0 1 0 0',A7:'× 0 2 0 2 0',D7:'× × 0 2 1 2'};
 export const noteName = midi => ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'][((Math.round(midi)%12)+12)%12] + (Math.floor(Math.round(midi)/12)-1);
 const n = (string, fret) => ({string, fret, midi:TUNING[string-1]+fret});
+const stringSwitchPhrases = [
+  [n(6,0),n(5,0),n(6,2),n(5,2),n(6,3),n(5,3),n(6,2),n(5,2)],
+  [n(1,0),n(2,0),n(1,1),n(2,1),n(1,3),n(2,3),n(1,1),n(2,1)],
+  [n(6,0),n(4,0),n(5,2),n(3,0),n(4,2),n(2,0),n(3,2),n(1,0)],
+  [n(6,3),n(5,0),n(4,2),n(3,0),n(4,0),n(5,2),n(6,0),n(5,3)],
+  [n(6,0),n(5,0),n(4,2),n(3,0),n(2,1),n(1,0),n(2,3),n(3,2),n(4,0),n(5,2),n(6,3),n(5,0)]
+];
 const tabs = [
   ['Read Tab Numbers','Your first four notes','Numbers are frets. A 0 means an open string. Read left to right; the top line is your thinnest string. Pick slowly and let each note ring.',[n(1,0),n(1,1),n(1,3),n(1,0)]],
   ['Single String Tabs','Find your way up the neck','Stay on the high E string. Use your index, middle and ring fingers for frets 1, 2 and 3. Keep your thumb relaxed.',[n(1,0),n(1,1),n(1,2),n(1,3),n(1,2),n(1,1)]],
@@ -47,7 +54,7 @@ const chords = [
   ['Advanced Chord Progressions',['Am','D7','G','E7'],'Explore a cycle of tension and release. Give each chord a clean attack and consistent volume.'],
 ];
 export const SKILLS = [
-  ...tabs.map(([title,subtitle,guide,sequence,technique],i)=>({id:`tabs-${i}`,track:'tabs',index:i,title,subtitle,guide,sequence,technique:!!technique,requires:i ? `tabs-${i-1}` : null})),
+  ...tabs.map(([title,subtitle,guide,sequence,technique],i)=>({id:`tabs-${i}`,track:'tabs',index:i,title,subtitle,guide,sequence,technique:!!technique,practicePhrases:i===3?stringSwitchPhrases:undefined,requires:i ? `tabs-${i-1}` : null})),
   ...chords.map(([title,names,guide],i)=>({id:`chords-${i}`,track:'chords',index:i,title,subtitle:i<7?'Build your chord vocabulary':'Make the changes feel natural',guide,sequence:names.map(chord=>({chord})),requires:i ? `chords-${i-1}` : null})),
 ];
 export const RULES = [

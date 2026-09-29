@@ -31,8 +31,8 @@ test('progression unlocks use prerequisite XP and optional mastery ranks',()=>{
   const profile=emptyProfile();
   assert.ok(PROGRESSION_NODES.length>=30);assert.equal(isProgressionUnlocked('fundamentals-strings',profile),true);
   assert.equal(isProgressionUnlocked('tabs-reading',profile),false);
-  profile.skillXP['fundamentals-strings']=79;assert.equal(isProgressionUnlocked('tabs-reading',profile),false);
-  profile.skillXP['fundamentals-strings']=80;assert.equal(isProgressionUnlocked('tabs-reading',profile),true);
+  profile.skillXP['fundamentals-strings']=34;assert.equal(isProgressionUnlocked('tabs-reading',profile),false);
+  profile.skillXP['fundamentals-strings']=35;assert.equal(isProgressionUnlocked('tabs-reading',profile),true);
   profile.skillXP['songs-performance']=499;assert.equal(isProgressionUnlocked('songs-mastery',profile),false);
   profile.skillXP['songs-performance']=500;assert.equal(isProgressionUnlocked('songs-mastery',profile),true);
 });
@@ -50,9 +50,9 @@ test('lesson XP rewards reflect length and accuracy and stop after the daily lim
 });
 test('lesson XP only reaches progression skills whose prerequisites are open',()=>{
   const profile=emptyProfile(),lesson=SKILLS[0],session={rule:{bpm:80,tier:1}},at=Date.UTC(2026,8,28,12);
-  profile.skillXP['fundamentals-strings']=79;
+  profile.skillXP['fundamentals-strings']=34;
   const first=awardPracticeXP(profile,lesson,{...session,total:40},{total:40,accuracy:100,passed:true},{history:[],at});
-  assert.deepEqual(first.targets,['fundamentals-strings']);assert.ok(profile.skillXP['fundamentals-strings']>80);assert.equal(Number(profile.skillXP['tabs-reading'])||0,0);
+  assert.deepEqual(first.targets,['fundamentals-strings']);assert.ok(profile.skillXP['fundamentals-strings']>35);assert.equal(Number(profile.skillXP['tabs-reading'])||0,0);
   const next=awardPracticeXP(profile,lesson,{...session,total:40},{total:40,accuracy:100,passed:true},{history:[],at:at+86400000});
   assert.ok(next.targets.includes('tabs-reading'));assert.ok(profile.skillXP['tabs-reading']>0);
 });

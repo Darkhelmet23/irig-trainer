@@ -18,7 +18,8 @@ function alternatePosition(event,index,tuning){
 
 function phrasesFor(skill){
   const source=skill.sequence.map(copy);if(source.length<2)return [source];
-  const phrases=[source,source.slice().reverse(),rotate(source,Math.floor(source.length/2))];
+  const authored=(skill.practicePhrases||[]).filter(phrase=>Array.isArray(phrase)&&phrase.length).map(phrase=>phrase.map(copy));
+  const phrases=[...authored,source,source.slice().reverse(),rotate(source,Math.floor(source.length/2))];
   if(source.length>=4)phrases.push([...source.slice(0,-2),source.at(-1),source.at(-2)]);
   if(skill.scaleName&&source.length>=8){const width=Math.max(3,Math.floor(source.length/2)),fragment=source.slice(0,width);phrases.push([...fragment,...fragment.slice().reverse().slice(1)]);}
   const seen=new Set();return phrases.filter(phrase=>{const key=signature(phrase);if(seen.has(key))return false;seen.add(key);return true;});

@@ -1,0 +1,12 @@
+export function onboardingStepFor(stored,hasProfile=false){
+  if(['complete','dismissed'].includes(stored))return null;
+  if(['welcome','tuning','input'].includes(stored))return stored;
+  return hasProfile?null:'welcome';
+}
+
+export function renderOnboardingPanel({step,mode,tunings=[],tuningId='standard',esc=value=>String(value)}){
+  if(!step)return '';
+  if(step==='welcome')return `<section class="onboarding-panel"><span class="eyebrow">A GOOD PLACE TO START</span><h2>Welcome to iRig Trainer.</h2><p>Pick up your guitar, find a comfortable tuning, then build your first skill one phrase at a time.</p><div class="onboarding-actions"><button class="primary" id="onboarding-live">Connect a guitar</button><button class="outline-btn" id="onboarding-demo">Explore Demo Mode</button><button class="subtle-btn" id="onboarding-skip">Skip setup</button></div><div class="onboarding-progress"><i class="active"></i><i></i><i></i></div></section>`;
+  if(step==='tuning')return `<section class="onboarding-panel"><span class="eyebrow">STEP 1 OF 2 · TUNING</span><h2>Set the guitar’s tuning.</h2><p>Choose the tuning you use most. You can change this later in Input & tuner.</p><div class="onboarding-actions"><label>Guitar tuning<select id="onboarding-tuning">${tunings.map(item=>`<option value="${esc(item.id)}" ${item.id===tuningId?'selected':''}>${esc(item.name)}</option>`).join('')}</select></label><button class="primary" id="onboarding-tuning-next">Continue</button><button class="subtle-btn" id="onboarding-skip">Skip setup</button></div><div class="onboarding-progress"><i class="active"></i><i class="active"></i><i></i></div></section>`;
+  return `<section class="onboarding-panel"><span class="eyebrow">STEP 2 OF 2 · INPUT CHECK</span><h2>${mode==='demo'?'Try a note in Demo Mode.':'Check your guitar input.'}</h2><p>${mode==='demo'?'Demo Mode uses Space and X in a lesson, so you can explore without connecting an interface.':'Connect the iRig or another audio input, then play an open string. The input meter and detected note are on the Input & tuner page.'}</p><div class="onboarding-actions">${mode==='live'?'<button class="outline-btn" id="onboarding-open-setup">Open input test</button>':''}<button class="primary" id="onboarding-fundamentals">Start Fundamentals</button><button class="subtle-btn" id="onboarding-skip">Skip setup</button></div><div class="onboarding-progress"><i class="active"></i><i class="active"></i><i class="active"></i></div></section>`;
+}

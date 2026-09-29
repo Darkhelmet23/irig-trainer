@@ -6,7 +6,7 @@ test('branched skill tree shows prerequisites and routes practice through filter
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/');await expect(page.getByRole('heading',{name:'Guitar skill tree'})).toBeVisible();
   await expect(page.locator('[data-progression-node]')).toHaveCount(32);expect(await page.locator('.tree-connection').count()).toBeGreaterThan(0);
-  await page.locator('[data-progression-node="tabs-reading"]').click();await expect(page.locator('.progression-detail h2')).toHaveText('Read tab numbers');await expect(page.locator('.prerequisite-list')).toContainText('80 XP');
+  await page.locator('[data-progression-node="tabs-reading"]').click();await expect(page.locator('.progression-detail h2')).toHaveText('Read tab numbers');await expect(page.locator('.prerequisite-list')).toContainText('35 XP');
   await expect(page.locator('#practice-related')).toBeDisabled();await expect(page.locator('#lesson-dialog')).not.toHaveAttribute('open','');
   await page.locator('[data-progression-node="fundamentals-strings"]').click();await expect(page.locator('#practice-related')).toBeEnabled();await page.locator('#practice-related').click();
   await expect(page.locator('.filtered-practice h2')).toHaveText('Strings & tuning');await expect(page.locator('[data-progression-lesson="tabs-0"]')).toBeVisible();

@@ -25,7 +25,7 @@ export function songLesson(song,trackId,{speed=1,from=1,to=Infinity,focus='full'
   if(Object.keys(candidates).length>128)throw new Error('Choose a shorter section or melody focus (up to 128 distinct voicings).');
   const keys=new Set(Object.values(candidates).map(noteSet));
   for(const [name,notes]of Object.entries(CHORDS)){if(!keys.has(noteSet(notes)))candidates[name]=notes;}
-  return {id:'song',title:song.title+' · '+part.name,track:'tabs',requires:null,timed:true,tuning,capo:part.capo,transposition:part.transposition,speed,tempos:song.tempos.map(t=>({...t,offsetMs:(t.offsetMs-start)/speed,bpm:t.bpm*speed})),bpm:song.tempo*speed,candidates,sequence,
+  return {id:'song',songId:song.id,trackId:part.id,fromMeasure:from,toMeasure:to,focus,originalBpm:song.tempo,title:song.title+' · '+part.name,track:'tabs',requires:null,timed:true,tuning,capo:part.capo,transposition:part.transposition,speed,tempos:song.tempos.map(t=>({...t,offsetMs:(t.offsetMs-start)/speed,bpm:t.bpm*speed})),bpm:song.tempo*speed,candidates,sequence,
     guide:`${part.name} · ${Math.round(speed*100)}% speed · ${focus==='melody'?'highest-note melody focus':'full part'}. Original rhythm, tempo changes, rests and repeats are retained. Capo ${part.capo||0}. ${suggested?'Some fingering is suggested because the source has no positions. ':''}Technique and sustain markings are shown for reference; grading checks attacks.`,suggested};
 }
 let database;

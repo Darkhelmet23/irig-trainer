@@ -13,18 +13,18 @@ export const PROGRESSION_BRANCHES=[
 const node=(id,branch,title,description,activityIds=[],activityTags=[],requires=[])=>({id,branch,title,description,activityIds,activityTags,requires});
 export const PROGRESSION_NODES=[
   node('fundamentals-strings','fundamentals','Strings & tuning','Name the open strings and understand standard tuning.',['tabs-0'],['string-names']),
-  node('fundamentals-fretboard','fundamentals','Fretboard notes','Find named notes across strings and positions.',['drill-fretboard'],['fretboard','note-finding'],[{skill:'fundamentals-strings',xp:60}]),
+  node('fundamentals-fretboard','fundamentals','Fretboard notes','Find named notes across strings and positions.',['drill-fretboard'],['fretboard','note-finding'],[{skill:'fundamentals-strings',xp:35}]),
   node('fundamentals-rhythm','fundamentals','Pulse & subdivisions','Keep a steady beat and read simple subdivisions.',['tabs-0','drill-fretboard'],['rhythm'],[{skill:'fundamentals-strings',xp:80}]),
   node('fundamentals-intervals','fundamentals','Hear intervals','Connect note names, fretboard distances, and the sound of a phrase.',['drill-ear'],['ear-training'],[{skill:'fundamentals-fretboard',xp:100}]),
 
-  node('tabs-reading','tabs','Read tab numbers','Translate tab positions into clean, deliberate notes.',['tabs-0','tabs-1'],['tab-reading'],[{skill:'fundamentals-strings',xp:80}]),
+  node('tabs-reading','tabs','Read tab numbers','Translate tab positions into clean, deliberate notes.',['tabs-0','tabs-1'],['tab-reading'],[{skill:'fundamentals-strings',xp:35}]),
   node('tabs-single-string','tabs','Single-string melodies','Play short phrases cleanly along one string.',['tabs-1','tabs-2'],['single-string'],[{skill:'tabs-reading',xp:100}]),
   node('tabs-string-switching','tabs','String changes','Move between strings without losing the pulse.',['tabs-3'],['string-switching'],[{skill:'tabs-single-string',xp:120}]),
   node('tabs-riffs','tabs','Riffs & endings','Build riffs from varied fragments, pickups, and alternate endings.',['tabs-4','tabs-5','tabs-6'],['riff-playing'],[{skill:'tabs-string-switching',xp:120}]),
   node('tabs-legato','tabs','Legato phrases','Read and shape hammer-ons and pull-offs in melodic lines.',['tabs-7','tabs-8'],['legato','technique'],[{skill:'tabs-riffs',xp:180}]),
   node('tabs-solos','tabs','Solo reading','Combine position changes, expressive notes, and longer tab phrases.',['tabs-12','tabs-13'],['solo-reading'],[{skill:'tabs-legato',xp:250,minRank:2}]),
 
-  node('chords-open','chords','Open chord shapes','Learn common open chord voicings and hear their color.',['chords-0','chords-1','chords-2','chords-3','chords-4','chords-5','chords-6'],['open-chords'],[{skill:'fundamentals-strings',xp:60}]),
+  node('chords-open','chords','Open chord shapes','Learn common open chord voicings and hear their color.',['chords-0','chords-1','chords-2','chords-3','chords-4','chords-5','chords-6'],['open-chords'],[{skill:'fundamentals-strings',xp:35}]),
   node('chords-changes','chords','Clean chord changes','Move between familiar shapes with even, ringing changes.',['chords-7','drill-chords'],['chord-changes'],[{skill:'chords-open',xp:120}]),
   node('chords-strumming','chords','Strumming patterns','Keep the groove steady through changing accents and subdivisions.',['chords-8','drill-chords'],['strumming','rhythm'],[{skill:'chords-changes',xp:120}]),
   node('chords-progressions','chords','Progressions & songs','Play two, three, and four-chord progressions in time.',['chords-9','chords-10','drill-chords'],['progressions'],[{skill:'chords-strumming',xp:180}]),
@@ -155,7 +155,7 @@ export function calculatePracticeXP({lesson,session,result,history=[],at=Date.no
   const accuracyFactor=0.4+0.6*accuracy/100;
   const improvementFactor=improved?1.15:1;
   const repeatFactor=[1,0.65,0.35][sameDay.length]||0;
-  const xp=Math.max(1,Math.round(18*lengthFactor*difficulty*accuracyFactor*improvementFactor*repeatFactor));
+  const xp=Math.max(1,Math.round(44*lengthFactor*difficulty*accuracyFactor*improvementFactor*repeatFactor));
   return {xp,targets,activityKey,improved,reason:'awarded'};
 }
 

@@ -1,11 +1,11 @@
-const CACHE = 'irig-trainer-static-v9';
+const CACHE = 'irig-trainer-static-v12';
 const ASSETS = [
-  '/', '/index.html', '/style.css', '/theme.css', '/app.js', '/audio.js', '/curriculum.js',
-  '/engine.js', '/lesson-patterns.js', '/tunings.js', '/songs.js', '/repertoire.js', '/arcade-ui.js',
+  '/', '/index.html', '/style.css', '/app.js', '/audio.js', '/curriculum.js',
+  '/engine.js', '/lesson-patterns.js', '/song-tempo.js', '/onboarding.js', '/tunings.js', '/songs.js', '/repertoire.js', '/arcade-ui.js',
   '/practice-hub.js', '/drills.js', '/session-coach.js', '/song-difficulty.js', '/input-diagnostics.js',
   '/metronome.js', '/session-controls.js', '/score-practice.js', '/library-tools.js',
   '/storage.js', '/profile-store.js', '/navigation.js', '/progression.js', '/skill-tree-ui.js', '/progression-library-ui.js', '/lesson-library-ui.js',
-  '/setup-ui.js', '/lesson-session-ui.js', '/song-import-ui.js', '/manifest.webmanifest', '/icon.svg'
+  '/setup-ui.js', '/lesson-session-ui.js', '/song-import-ui.js', '/manifest.webmanifest', '/brand-icon.svg', '/brand-mark.svg', '/brand-mark-mono.svg', '/brand-wordmark.jpg'
 ];
 
 self.addEventListener('install', event => {

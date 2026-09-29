@@ -1,4 +1,5 @@
 import {TUNING,noteName} from './curriculum.js';
+import {scaleSongSkill} from './song-tempo.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const targetId=event=>event?.chord?`chord:${event.chord}`:`note:${event?.midi}`;
@@ -75,7 +76,6 @@ export function weakSpotWarmup(profile,tuning=TUNING){
   return {id:'warmup-generated',title:personalized?'Weak-spot warm-up':'Starter warm-up',track:'tabs',requires:null,timed:true,speed:.75,bpm,tuning:activeTuning.slice(),sequence:pattern,guide:personalized?'Generated from your recent string/fret accuracy. Play each target cleanly, then repeat the hardest positions before returning to your song.':'A short starter pattern while the coach learns your weak positions. Your future warm-ups will adapt to your practice history.'};
 }
 
-function scaledSongSkill(skill,newSpeed){const oldSpeed=skill.speed||1,ratio=oldSpeed/newSpeed;return {...skill,speed:newSpeed,bpm:skill.bpm*newSpeed/oldSpeed,sequence:skill.sequence.map(event=>({...event,offsetMs:event.offsetMs*ratio,durationMs:event.durationMs*ratio}))};}
 function adaptiveSection(session){
   const misses=session.events.filter(event=>!event.passive&&(event.status==='miss'||event.status==='wrong'||event.wrongAttempts));if(misses.length<2)return null;
   const id=targetId,eventCounts=new Map();for(const event of misses){const key=id(event);eventCounts.set(key,(eventCounts.get(key)||0)+1);}const [targetKey,count]=[...eventCounts].sort((a,b)=>b[1]-a[1])[0];if(count<2)return null;
@@ -90,7 +90,6 @@ function adaptiveSection(session){
 export function nextPractice(lesson,session,result){
   const options=session.practiceOptions||{};if(!lesson||session.userStoppedEndless)return null;
   if(session.skill.tempoLadder&&options.progressionPractice&&result.accuracy>=90){const stages=session.skill.tempoStages||[.6,.7,.8,.9,1],stage=Number(session.skill.tempoStage)||0;if(stage<stages.length-1){const nextStage=stage+1,bpm=Math.round(session.skill.tempoTargetBpm*stages[nextStage]),beat=60000/bpm;lesson.skill={...lesson.skill,bpm,speed:stages[nextStage],tempoStage:nextStage,sequence:lesson.skill.sequence.map((event,index)=>({...event,offsetMs:index*beat,durationMs:beat}))};lesson.loopRound=1;return `Great run · scale tempo ladder moving to ${Math.round(stages[nextStage]*100)}% (${bpm} BPM).`;}}
-  if(session.skill.timed&&options.speedLadder&&result.accuracy>=90&&(session.skill.speed||1)<.995){const next=Math.min(1,Math.round(((session.skill.speed||1)+.1)*10)/10);lesson.skill=scaledSongSkill(session.skill,next);lesson.loopRound=1;return `Great run · speed ladder moving to ${Math.round(next*100)}%.`;}
   if(session.skill.timed&&options.loop&&session.loopRound<3&&result.accuracy>=75){lesson.loopRound=session.loopRound+1;return `A-B loop ${lesson.loopRound}/3 · keep the section moving.`;}
   if(options.adaptive&&result.accuracy<80){const focused=adaptiveSection(session);if(focused){lesson.skill=focused;lesson.options={...options,adaptive:false,loop:false,speedLadder:false};lesson.loopRound=1;return `Adaptive coach found a section to slow down and repeat.`;}}
   return null;

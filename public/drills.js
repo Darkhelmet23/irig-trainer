@@ -34,9 +34,9 @@ export function createDrill(kind,options={}){
   }
   if(kind==='scale'){
     const roots=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],rootName=roots.includes(options.root)?options.root:'E';
-    const name=STEPS[options.scale]?options.scale:'Minor pentatonic',steps=STEPS[name],root=roots.indexOf(rootName),classes=new Set(steps.map(n=>(n+root)%12));
+    const name=STEPS[options.scale]?options.scale:'Minor pentatonic',steps=STEPS[name],root=roots.indexOf(rootName),tuning=Array.isArray(options.tuning)&&options.tuning.length===6?options.tuning:TUNING,classes=new Set(steps.map(n=>(n+root)%12));
     const requestedPosition=Math.max(1,Math.min(5,Math.trunc(Number(options.position)||1))),shift=!!options.positionShift,position=shift&&requestedPosition===5?4:requestedPosition,shiftedPosition=shift?position+1:position;
-    const lineAt=box=>{const low=(box-1)*2,high=low+4,notes=[];for(let string=6;string>=1;string--)for(let fret=low;fret<=Math.min(12,high);fret++){const midi=TUNING[string-1]+fret;if(classes.has(midi%12))notes.push({string,fret,midi});}return notes.sort((a,b)=>a.midi-b.midi||a.string-b.string);};
+    const lineAt=box=>{const low=(box-1)*2,high=low+4,notes=[];for(let string=tuning.length;string>=1;string--)for(let fret=low;fret<=Math.min(12,high);fret++){const midi=tuning[string-1]+fret;if(classes.has(midi%12))notes.push({string,fret,midi});}return notes.sort((a,b)=>a.midi-b.midi||a.string-b.string);};
     const first=lineAt(position),second=shift?lineAt(shiftedPosition).filter(note=>note.midi>(first.at(-1)?.midi??-1)):[],line=[...first,...second];
     const sequenceLength=Math.max(1,Math.min(4,Math.trunc(Number(options.sequenceLength)||1)));
     let phrase=line;
@@ -49,7 +49,7 @@ export function createDrill(kind,options={}){
     const positionText=shift?` · positions ${position}–${shiftedPosition}`:` · position ${position}`;
     const sequenceText=sequenceLength>1?` using ${sequenceLength}-note sequences`:'';
     const directionText=direction==='descending'?'descending':direction==='ascending'?'ascending':'ascending and descending';
-    return timed({id:'drill-scale',title:`${rootName} ${name}${positionText}`,track:'tabs',requires:null,scaleName:`${rootName} ${name}`,position,sequenceLength,direction,positionShift:shift,tempoTarget:tempoLadder,tempoLadder,tempoTargetBpm,tempoStage:0,tempoStages:tempoLadder?[.6,.7,.8,.9,1]:[],adaptiveTempo:tempoLadder,fretboardPattern:[...first,...second],sequence,guide:`Play ${directionText}${sequenceText} in ${rootName} ${name}. ${shift?`Connect positions ${position} and ${shiftedPosition}. `:''}${tempoLadder?'Begin at 60% tempo and move up only after you meet the accuracy goal. ':'Keep each note even and listen for the scale color. '}Follow the fretboard map.`},bpm);
+    return timed({id:'drill-scale',title:`${rootName} ${name}${positionText}`,track:'tabs',requires:null,scaleName:`${rootName} ${name}`,scaleRoot:rootName,tuning:tuning.slice(),position,sequenceLength,direction,positionShift:shift,tempoTarget:tempoLadder,tempoLadder,tempoTargetBpm,tempoStage:0,tempoStages:tempoLadder?[.6,.7,.8,.9,1]:[],adaptiveTempo:tempoLadder,fretboardPattern:[...first,...second],sequence,guide:`Play ${directionText}${sequenceText} in ${rootName} ${name}. ${shift?`Connect positions ${position} and ${shiftedPosition}. `:''}${tempoLadder?'Begin at 60% tempo and move up only after you meet the accuracy goal. ':'Keep each note even and listen for the scale color. '}Follow the fretboard map.`},bpm);
   }
   if(kind==='technique'){
     const source=SKILLS.find(s=>s.technique)||SKILLS.find(s=>s.title==='Alternate Picking')||SKILLS[10];
@@ -61,7 +61,8 @@ export function createDrill(kind,options={}){
 
 export function fretboardMap(skill){
   if(!skill.fretboardPattern?.length)return '';
-  return `<div class="mini-fretboard" aria-label="Scale pattern on the first twelve frets">${Array.from({length:6},(_,i)=>{const string=i+1;return `<div class="mini-fret-row"><b>${['e','B','G','D','A','E'][i]}</b>${Array.from({length:13},(_,f)=>{const p=skill.fretboardPattern.find(n=>n.string===string&&n.fret===f);return `<span class="${p?'scale-dot':''}" title="${p?noteName(p.midi):`Fret ${f}`}">${p?noteName(p.midi):''}</span>`;}).join('')}</div>`;}).join('')}</div>`;
+  const roots=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],rootPitch=roots.indexOf(skill.scaleRoot),tuning=Array.isArray(skill.tuning)&&skill.tuning.length===6?skill.tuning:TUNING;
+  return `<div class="mini-fretboard" aria-label="${skill.scaleName||'Scale'} pattern on frets zero through twelve">${Array.from({length:6},(_,i)=>{const string=i+1,label=noteName(tuning[string-1]).replace(/-?\d+$/,'');return `<div class="mini-fret-row"><b>${label}</b>${Array.from({length:13},(_,f)=>{const note=skill.fretboardPattern.find(item=>item.string===string&&item.fret===f),isRoot=!!note&&rootPitch>=0&&note.midi%12===rootPitch,base=Math.max(0,(skill.position-1)*2),finger=!note?'':f===0?'open string':`suggested finger ${Math.max(1,Math.min(4,f-base+1))}`,title=note?`${noteName(note.midi)}${isRoot?' · root':''}${finger?' · '+finger:''}`:`Fret ${f}`;return `<span class="${note?'scale-dot':''}${isRoot?' root-dot':''}" title="${title}">${note?noteName(note.midi):''}</span>`;}).join('')}</div>`;}).join('')}</div>`;
 }
 export const scaleNames=Object.keys(STEPS);
 export const chordProgressions=Object.keys(PROGRESSIONS);

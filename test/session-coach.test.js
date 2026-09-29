@@ -55,12 +55,12 @@ test('dashboard coach shows the recent timing trend and targeted recommendation 
   assert.doesNotMatch(html,/<script>/);
 });
 
-test('speed ladder advances only after the accuracy threshold',()=>{
-  const lesson={skill:{timed:true,speed:.6,bpm:60,sequence:[{offsetMs:0,durationMs:1000}]},loopRound:1};
-  const session={skill:lesson.skill,practiceOptions:{speedLadder:true},rule:{bpm:60}};
-  assert.match(nextPractice(lesson,session,{accuracy:95}),/70%/);
-  assert.equal(lesson.skill.speed,.7);
-  assert.equal(nextPractice({skill:{speed:.6,timed:true},loopRound:1},session,{accuracy:89}),null);
+test('song speed ladders wait for the player to accept the next tempo',()=>{
+  const skill={timed:true,speed:.6,bpm:72,originalBpm:120,sequence:[{offsetMs:0,durationMs:1000}]};
+  const lesson={skill,loopRound:1},session={skill,practiceOptions:{speedLadder:true},rule:{bpm:72}};
+  assert.equal(nextPractice(lesson,session,{accuracy:95}),null);
+  assert.equal(lesson.skill.speed,.6);
+  assert.equal(nextPractice(lesson,session,{accuracy:89}),null);
 });
 
 test('scale tempo ladder starts at sixty percent and raises BPM after accurate rounds',()=>{
