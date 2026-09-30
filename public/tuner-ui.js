@@ -5,7 +5,7 @@ export function createTunerUI({
   tuningTarget,
   noteName,
   esc,
-  save,
+  saveDevice,
   render,
   toast,
 }) {
@@ -32,7 +32,7 @@ export function createTunerUI({
       const tuning = TUNINGS.find((item) => item.id === event.target.value);
       if (tuning) settings.tuning = tuning.notes.slice();
       settings.fixedString = 0;
-      save("irig-settings", settings);
+      saveDevice(settings);
       render();
     });
     $("#apply-tuning")?.addEventListener("click", () => {
@@ -40,7 +40,7 @@ export function createTunerUI({
         settings.tuning = parseTuning($("#custom-tuning").value);
         settings.tuningId = "custom";
         settings.fixedString = 0;
-        save("irig-settings", settings);
+        saveDevice(settings);
         render();
         toast("Custom tuning saved.");
       } catch (error) {

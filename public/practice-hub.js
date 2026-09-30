@@ -1,13 +1,13 @@
 import {SKILLS,TIERS} from './curriculum.js';
 import {scaleNames,chordProgressions} from './drills.js';
+import {createPracticeRepository} from './data/local-repositories.js';
+const practiceData=createPracticeRepository();
 
 const $=selector=>document.querySelector(selector);
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dayKey=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 const DAY=()=>dayKey(new Date());
-function read(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}}
-function write(key,value){localStorage.setItem(key,JSON.stringify(value));}
-function plan(){let data=read('irig-daily-plan-v1',null);if(data?.day!==DAY())data={day:DAY(),tasks:[['Warm-up',5],['Chord transitions',10],['Song practice',10],['Weak spots',5]].map(([title,minutes],i)=>({id:String(i),title,minutes,done:false}))};return data;}
+function plan(){let data=practiceData.loadDailyPlan();if(data?.day!==DAY())data={day:DAY(),tasks:[['Warm-up',5],['Chord transitions',10],['Song practice',10],['Weak spots',5]].map(([title,minutes],i)=>({id:String(i),title,minutes,done:false}))};return data;}
 function dates(history){return [...new Set(history.filter(h=>h.at).map(h=>dayKey(new Date(h.at))))].sort().reverse();}
 function streak(history){const all=new Set(dates(history));let day=DAY();if(!all.has(day)){const previous=new Date(`${day}T12:00:00`);previous.setDate(previous.getDate()-1);day=dayKey(previous);}let count=0;while(all.has(day)){count++;const previous=new Date(`${day}T12:00:00`);previous.setDate(previous.getDate()-1);day=dayKey(previous);}return count;}
 function gather(history){
@@ -20,7 +20,7 @@ function gather(history){
   }
   return {target:[...target.values()].map(t=>({...t,accuracy:Math.round(100*t.hits/Math.max(1,t.total))})),fret:[...fret.values()],song:[...song.values()].map(s=>({...s,accuracy:Math.round(s.accuracy/s.sessions)})),day:[...day.entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(-14).map(([date,s])=>({date,...s,accuracy:Math.round(s.accuracy/s.sessions)}))};
 }
-function currentGoals(profile){return read('irig-goals-v1',[]).map(g=>{let value=0;if(g.type==='sessions')value=profile.sessions;else if(g.type==='accuracy')value=Math.max(0,...profile.history.map(h=>Number(h.accuracy)||0));else if(g.type==='tempo')value=Math.max(0,...profile.history.filter(h=>h.passed).map(h=>Number(h.bpm)||0));else if(g.type==='streak')value=streak(profile.history);else if(g.type==='gold')value=Object.values(profile.skills||{}).filter(t=>Number(t)>=3).length;return {...g,value,done:value>=g.target};});}
+function currentGoals(profile){return practiceData.loadGoals().map(g=>{let value=0;if(g.type==='sessions')value=profile.sessions;else if(g.type==='accuracy')value=Math.max(0,...profile.history.map(h=>Number(h.accuracy)||0));else if(g.type==='tempo')value=Math.max(0,...profile.history.filter(h=>h.passed).map(h=>Number(h.bpm)||0));else if(g.type==='streak')value=streak(profile.history);else if(g.type==='gold')value=Object.values(profile.skills||{}).filter(t=>Number(t)>=3).length;return {...g,value,done:value>=g.target};});}
 function achievements(profile,stats){const runs=profile.history,days=streak(runs);return [
   ['First fret','Finish your first practice session.',profile.sessions>=1],['Clean chorus','Score 100% on a practice run.',runs.some(h=>h.accuracy===100)],['Set-list regular','Practice 10 different charts or skills.',new Set(runs.map(h=>h.title)).size>=10],['Tempo chaser','Pass a run at 100 BPM or faster.',runs.some(h=>h.passed&&(h.bpm||0)>=100)],['Seven-day streak','Practice seven days in a row.',days>=7],['Note finder','Record accurate practice on 12 different note/chord targets.',stats.target.filter(t=>t.accuracy>=70).length>=12],['One hundred notes','Complete at least 100 targets in one run.',runs.some(h=>(h.total||0)>=100)]];}
 export function progressPage(profile){
@@ -38,9 +38,9 @@ export function progressPage(profile){
 export function bindProgressPage(onTraining){
   const data=plan();
   document.querySelector('.hub-drills')?.insertAdjacentHTML('afterend',`<div class="drill-options"><label><span>Note to find</span><select id="drill-note">${['C','D','E','F','G','A','B'].map(n=>`<option>${n}</option>`).join('')}</select></label><label><span>String</span><select id="drill-string">${['high e','B','G','D','A','low E'].map((n,i)=>`<option value="${i+1}" ${i===4?'selected':''}>${n}</option>`).join('')}</select></label><label><span>Scale & key</span><select id="drill-scale">${scaleNames.map(n=>`<option>${esc(n)}</option>`).join('')}</select><select id="drill-root">${['E','A','G','C','D','B'].map(n=>`<option>${n}</option>`).join('')}</select></label><label><span>Chord changes</span><select id="drill-progression">${chordProgressions.map(n=>`<option>${esc(n)}</option>`).join('')}</select></label></div>`);
-  document.querySelectorAll('[data-plan-task]').forEach(box=>box.addEventListener('change',()=>{const item=data.tasks.find(t=>t.id===box.dataset.planTask);if(item)item.done=box.checked;write('irig-daily-plan-v1',data);box.closest('.plan-task')?.classList.toggle('complete',box.checked);}));
+  document.querySelectorAll('[data-plan-task]').forEach(box=>box.addEventListener('change',()=>{const item=data.tasks.find(t=>t.id===box.dataset.planTask);if(item)item.done=box.checked;practiceData.saveDailyPlan(data);box.closest('.plan-task')?.classList.toggle('complete',box.checked);}));
   document.querySelectorAll('[data-hub-drill]').forEach(button=>button.addEventListener('click',()=>onTraining(button.dataset.hubDrill,{note:$('#drill-note')?.value,string:$('#drill-string')?.value,scale:$('#drill-scale')?.value,root:$('#drill-root')?.value,progression:$('#drill-progression')?.value})));
   $('#goal-form select')?.addEventListener('change',event=>{const target=$('#goal-form [name="target"]');target.value=event.target.value==='gold'?'5':event.target.value==='accuracy'?'90':event.target.value==='tempo'?'100':'7';});
-  $('#goal-form')?.addEventListener('submit',event=>{event.preventDefault();const form=event.currentTarget,title=form.elements.title.value.trim(),type=form.elements.type.value,target=Number(form.elements.target.value),goals=read('irig-goals-v1',[]);if(!title||!Number.isInteger(target)||target<1)return;goals.push({id:crypto.randomUUID(),title,type,target,due:form.elements.due.value||'',created:Date.now()});write('irig-goals-v1',goals);location.hash='progress';location.reload();});
-  document.querySelectorAll('[data-remove-goal]').forEach(button=>button.addEventListener('click',()=>{write('irig-goals-v1',read('irig-goals-v1',[]).filter(g=>g.id!==button.dataset.removeGoal));location.reload();}));
+  $('#goal-form')?.addEventListener('submit',event=>{event.preventDefault();const form=event.currentTarget,title=form.elements.title.value.trim(),type=form.elements.type.value,target=Number(form.elements.target.value),goals=practiceData.loadGoals();if(!title||!Number.isInteger(target)||target<1)return;goals.push({id:crypto.randomUUID(),title,type,target,due:form.elements.due.value||'',created:Date.now()});practiceData.saveGoals(goals);location.hash='progress';location.reload();});
+  document.querySelectorAll('[data-remove-goal]').forEach(button=>button.addEventListener('click',()=>{practiceData.saveGoals(practiceData.loadGoals().filter(g=>g.id!==button.dataset.removeGoal));location.reload();}));
 }

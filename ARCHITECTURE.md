@@ -20,4 +20,6 @@
 
 ## Local state
 
-Onboarding is stored under irig-onboarding-v1. Tuning and practice preferences use irig-settings and irig-practice-settings. Imported scores, practice packs, and Song Studio projects remain local to the browser. There is no account or cloud sync.
+`public/profile-store.js` owns the separate demo/live profiles and exposes saved snapshots for migration detection. `public/data/local-repositories.js` owns settings, practice packs, goals, plans, checkpoints, and account migration decisions while preserving every existing localStorage key. `public/storage.js` remains the JSON adapter. `public/songs.js` and `public/song-studio-storage.js` are the IndexedDB repositories for imported scores, projects, and recording blobs. No local records are uploaded automatically.
+
+`public/auth/auth-service.js` is the sole account controller. It normalizes Supabase sessions into a small internal account model; `public/auth/account-ui.js` owns the optional account dialog. `public/auth/supabase-client.js` loads the official SDK only when `/api/auth-config` returns a valid public URL/key. The server reads optional `.env` values. Missing configuration or network leaves the trainer in guest mode. `public/data/migration.js` detects existing local progress and records a future-sync choice without merging or deleting data. See `SUPABASE-SETUP.md` for backend and later desktop considerations.

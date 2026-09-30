@@ -6,15 +6,19 @@
     "description": "A guitar learning, song-practice, and songwriting app with live USB audio.",
     "scripts": {
         "start": "node server.js",
-        "test": "node --test test/*.test.js"
+        "test": "node --test test/*.test.js",
+        "build:auth": "node scripts/build-auth-sdk.mjs",
+        "postinstall": "npm run build:auth"
     },
     "engines": {
         "node": ">=22"
     },
     "devDependencies": {
-        "@playwright/test": "^1.63.0"
+        "@playwright/test": "^1.63.0",
+        "esbuild": "^0.28.2"
     },
     "dependencies": {
-        "@coderline/alphatab": "^1.8.4"
+        "@coderline/alphatab": "^1.8.4",
+        "@supabase/supabase-js": "^2.117.2"
     }
 }

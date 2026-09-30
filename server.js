@@ -3,8 +3,21 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {Worker} from 'node:worker_threads';
+try { process.loadEnvFile?.(fileURLToPath(new URL('./.env',import.meta.url))); } catch {}
 const root = path.resolve(fileURLToPath(new URL('./public/', import.meta.url)));
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.xml': 'application/xml' };
+export function publicSupabaseConfig(env=process.env){
+  const url=String(env.SUPABASE_URL||'').trim(),key=String(env.SUPABASE_ANON_KEY||'').trim();
+  let parsed;
+  try{parsed=new URL(url);}catch{return {configured:false};}
+  const local=parsed.hostname==='localhost'||parsed.hostname==='127.0.0.1';
+  if((parsed.protocol!=='https:'&&!(local&&parsed.protocol==='http:'))||parsed.username||parsed.password||parsed.search||parsed.hash)return {configured:false};
+  let publicKey=key.startsWith('sb_publishable_')&&key.length>20;
+  if(!publicKey&&key.split('.').length===3){
+    try{publicKey=JSON.parse(Buffer.from(key.split('.')[1],'base64url').toString()).role==='anon';}catch{}
+  }
+  return publicKey?{configured:true,url:parsed.toString().replace(/\/+$/,''),anonKey:key}:{configured:false};
+}
 let activeImports=0;
 async function importScore(req,res,url){
   const send=(status,value)=>{if(!res.destroyed&&!res.writableEnded){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));}};
@@ -33,6 +46,10 @@ export function createServer() {
   return http.createServer(async (req, res) => {
     try {
       const url=new URL(req.url,'http://localhost');
+      if(req.method==='GET'&&url.pathname==='/api/auth-config'){
+        res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+        return res.end(JSON.stringify(publicSupabaseConfig()));
+      }
       if(req.method==='POST'&&url.pathname==='/api/import-score')return await importScore(req,res,url);
       if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405); return res.end(); }
       const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname).replace(/\\/g, '/');

@@ -24,6 +24,7 @@ export function createSessionController({
   metronome,
   toast,
   profileStore,
+  practiceRepository,
   render,
   renderLesson,
   openLesson,
@@ -408,9 +409,7 @@ export function createSessionController({
     profileStore.persist(s.profileMode, profile);
     if (s.skill.checkpointKey && !s.skill.adaptiveReplay) {
       try {
-        const ranks = JSON.parse(
-            localStorage.getItem("irig-checkpoints-v1") || "{}",
-          ),
+        const ranks = practiceRepository.loadCheckpoints(),
           rank =
             result.accuracy >= 98
               ? "Diamond"
@@ -428,7 +427,7 @@ export function createSessionController({
             rank,
             at: Date.now(),
           };
-        localStorage.setItem("irig-checkpoints-v1", JSON.stringify(ranks));
+        practiceRepository.saveCheckpoints(ranks);
       } catch {}
     }
     $("#lesson-content").innerHTML =

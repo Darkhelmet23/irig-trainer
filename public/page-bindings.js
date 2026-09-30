@@ -14,7 +14,8 @@ export function createPageBindings({
   bindLibraryTools,
   bindProgressPage,
   bindSessionTools,
-  save,
+  settingsRepository,
+  practiceRepository,
   toast,
   render,
   startLatencyCalibration,
@@ -51,7 +52,7 @@ export function createPageBindings({
           if (packs.length >= 30)
             return toast("This library holds up to 30 imported packs.");
           packs.push(pack);
-          save("irig-packs", packs);
+          practiceRepository.savePacks(packs);
           render();
           toast("Custom lesson added to your library.");
         },
@@ -76,7 +77,7 @@ export function createPageBindings({
               -300,
               Math.min(300, Number(bundle.tuner.offset) || 0),
             );
-            save("irig-settings", settings);
+            settingsRepository.saveDevice(settings);
           }
           const p = bundle.practice || {};
           practicePrefs.countInBars = [0, 1, 2].includes(Number(p.countInBars))
@@ -92,8 +93,8 @@ export function createPageBindings({
           )
             ? p.accuracyMode
             : practicePrefs.accuracyMode;
-          save("irig-packs", packs);
-          save("irig-practice-settings", practicePrefs);
+          practiceRepository.savePacks(packs);
+          settingsRepository.savePractice(practicePrefs);
           render();
           toast("Bundle imported. Lessons and practice settings are ready.");
         },
@@ -112,7 +113,7 @@ export function createPageBindings({
     if (page === "setup")
       bindSessionTools(
         practicePrefs,
-        (prefs) => save("irig-practice-settings", prefs),
+        (prefs) => settingsRepository.savePractice(prefs),
         startLatencyCalibration,
         inputDiagnostics,
       );
@@ -273,21 +274,21 @@ export function createPageBindings({
     });
     $("#channel")?.addEventListener("change", (e) => {
       settings.channel = Number(e.target.value);
-      save("irig-settings", settings);
+      settingsRepository.saveDevice(settings);
       toast("Channel saved. Reconnect input to apply.");
     });
     $("#gate")?.addEventListener("input", (e) => {
       settings.gate = Number(e.target.value);
       input.gate = settings.gate;
       $("#gate-label").textContent = settings.gate.toFixed(3);
-      save("irig-settings", settings);
+      settingsRepository.saveDevice(settings);
     });
     $("#offset")?.addEventListener("input", (e) => {
       settings.offset = Number(e.target.value);
       inputDiagnostics.setCalibration(settings.offset);
       $("#offset-label").textContent = settings.offset + " ms";
       renderInputDiagnostics(inputDiagnostics.snapshot());
-      save("irig-settings", settings);
+      settingsRepository.saveDevice(settings);
     });
     $("#live-mode")?.addEventListener("change", (e) =>
       setMode(e.target.checked ? "live" : "demo"),

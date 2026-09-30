@@ -1,9 +1,15 @@
-const CACHE = "irig-trainer-static-v18";
+const CACHE = "irig-trainer-static-v19";
 const ASSETS = [
   "/",
   "/index.html",
   "/style.css",
   "/app.js",
+  "/auth/supabase-client.js",
+  "/auth/auth-service.js",
+  "/auth/account-ui.js",
+  "/data/local-repositories.js",
+  "/data/migration.js",
+  "/vendor/supabase-sdk.js",
   "/audio.js",
   "/curriculum.js",
   "/engine.js",

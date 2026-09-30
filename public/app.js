@@ -60,6 +60,11 @@ import { InputDiagnostics } from "./input-diagnostics.js";
 import { dashboardCoachMarkup } from "./session-coach.js";
 import { createStorage } from "./storage.js";
 import { createProfileStore } from "./profile-store.js";
+import {
+  createSettingsRepository,
+  createPracticeRepository,
+  createMigrationRepository,
+} from "./data/local-repositories.js";
 import { createRouter, PAGE_NAMES } from "./navigation.js";
 import { renderSkillTreePage } from "./skill-tree-ui.js";
 import { renderLessonLibraryPage } from "./lesson-library-ui.js";
@@ -75,6 +80,9 @@ import { createSessionController } from "./practice/session.js";
 import { createPageBindings } from "./page-bindings.js";
 import { renderArenaPage, renderModeBanner } from "./arena-page.js";
 import { createTunerUI } from "./tuner-ui.js";
+import { createAuthService } from "./auth/auth-service.js";
+import { createAccountUI } from "./auth/account-ui.js";
+import { detectLocalProgress } from "./data/migration.js";
 const $ = (s) => document.querySelector(s),
   esc = (s) =>
     String(s).replace(
@@ -88,16 +96,20 @@ const $ = (s) => document.querySelector(s),
           "'": "&#39;",
         })[c],
     );
-const { read, save } = createStorage({
+const localStorageAdapter = createStorage({
   onWriteError: () =>
     toast("Storage is unavailable. Progress will last only for this visit."),
 });
+const { read, save } = localStorageAdapter;
+const settingsRepository = createSettingsRepository({ storage: localStorageAdapter });
+const practiceRepository = createPracticeRepository({ storage: localStorageAdapter });
+const migrationRepository = createMigrationRepository({ storage: localStorageAdapter });
 const profileStore = createProfileStore({ read, save, sanitizeProfile });
 let mode = profileStore.mode,
   profile = profileStore.profile;
 let onboardingStep = onboardingStepFor(
-  read("irig-onboarding-v1", null),
-  !!(read("irig-demo", null) || read("irig-live", null)),
+  settingsRepository.loadOnboarding(),
+  !!(profileStore.loadSaved("demo") || profileStore.loadSaved("live")),
 );
 let page = "tree",
   selected = "fundamentals-strings",
@@ -108,7 +120,7 @@ let page = "tree",
   audioLabel = "",
   connecting = false;
 let packs = [];
-for (const pack of read("irig-packs", []).slice?.(0, 30) || []) {
+for (const pack of practiceRepository.loadPacks().slice?.(0, 30) || []) {
   try {
     packs.push(validatePack(pack));
   } catch {}
@@ -117,7 +129,7 @@ const settings = {
   gate: 0.008,
   offset: 0,
   channel: 0,
-  ...read("irig-settings", {}),
+  ...settingsRepository.loadDevice(),
 };
 const inputDiagnostics = new InputDiagnostics(settings.offset);
 const practicePrefs = {
@@ -128,7 +140,7 @@ const practicePrefs = {
   accent: true,
   record: false,
   accuracyMode: "both",
-  ...read("irig-practice-settings", {}),
+  ...settingsRepository.loadPractice(),
 };
 let latencyCalibration = null,
   lastMetronomePulse = 0,
@@ -176,7 +188,7 @@ const songImportUI = createSongImportUI({
   pitchClasses,
   TUNINGS,
   validTuning,
-  save,
+  saveDevice: settingsRepository.saveDevice,
   go: (next) => go(next),
   toast,
   render: () => render(),
@@ -215,13 +227,23 @@ const tunerUI = createTunerUI({
   tuningTarget,
   noteName,
   esc,
-  save,
+  saveDevice: settingsRepository.saveDevice,
   getGate: () => input.gate,
   render: () => render(),
   toast,
 });
 
 const songStudioStorage = createSongStudioStorage();
+const auth = createAuthService();
+const accountUI = createAccountUI({
+  auth,
+  migrationRepository,
+  detectProgress: () => detectLocalProgress({
+    profileStore,
+    songProjects: songStudioStorage,
+    loadImportedSongs: loadSongs,
+  }),
+});
 const songStudio = createSongStudioUI({
   storage: songStudioStorage,
   tunings: TUNINGS,
@@ -257,7 +279,7 @@ function setMode(next) {
 }
 function saveOnboardingStep(step) {
   onboardingStep = step;
-  save("irig-onboarding-v1", step);
+  settingsRepository.saveOnboarding(step);
 }
 function bindOnboarding() {
   if (page !== "tree" || !onboardingStep) return;
@@ -281,7 +303,7 @@ function bindOnboarding() {
       settings.tuningId = tuning.id;
       settings.tuning = tuning.notes.slice();
       settings.fixedString = 0;
-      save("irig-settings", settings);
+      settingsRepository.saveDevice(settings);
     }
     saveOnboardingStep("input");
     render();
@@ -501,7 +523,8 @@ const bindPageActions = createPageBindings({
   bindLibraryTools,
   bindProgressPage,
   bindSessionTools,
-  save,
+  settingsRepository,
+  practiceRepository,
   toast,
   render,
   startLatencyCalibration,
@@ -555,7 +578,7 @@ async function importPack(e) {
       throw new Error("This library holds up to 30 imported packs.");
     const pack = validatePack(JSON.parse(await file.text()));
     packs.push(pack);
-    save("irig-packs", packs);
+    practiceRepository.savePacks(packs);
     render();
     toast("Lesson pack added to your library.");
   } catch (error) {
@@ -633,7 +656,7 @@ function renderLesson() {
   });
   $("#accuracy-mode")?.addEventListener("change", (e) => {
     practicePrefs.accuracyMode = e.target.value;
-    save("irig-practice-settings", practicePrefs);
+    settingsRepository.savePractice(practicePrefs);
   });
   $("#adaptive-enabled")?.addEventListener("change", (e) => {
     lesson.options.adaptive = e.target.checked;
@@ -657,7 +680,7 @@ function renderLesson() {
       lesson.options.countInBars = Number($("#song-count-in").value);
       lesson.options.songMode = $("#song-practice-mode").value;
       practicePrefs.songCountInBars = lesson.options.countInBars;
-      save("irig-practice-settings", practicePrefs);
+      settingsRepository.savePractice(practicePrefs);
     }
     sessions.startSession();
   };
@@ -778,7 +801,7 @@ function onAudio(data) {
       settings.offset =
         Math.round(Math.max(-300, Math.min(300, median)) / 5) * 5;
       inputDiagnostics.setCalibration(settings.offset);
-      save("irig-settings", settings);
+      settingsRepository.saveDevice(settings);
       $("#offset").value = settings.offset;
       $("#offset-label").textContent = settings.offset + " ms";
       $("#calibration-status").textContent =
@@ -848,6 +871,7 @@ const sessions = createSessionController({
   metronome,
   toast,
   profileStore,
+  practiceRepository,
   render,
   renderLesson,
   openLesson,
@@ -880,11 +904,13 @@ document.addEventListener("keydown", (e) => {
 window.addEventListener("pagehide", () => {
   input.disconnect();
   songStudio.dispose();
+  auth.dispose();
 });
 if ("serviceWorker" in navigator)
   window.addEventListener("load", () =>
     navigator.serviceWorker.register("/service-worker.js").catch(() => {}),
   );
+accountUI.bind();
 router.start();
 songStudio.initialize().then(() => {
   if (page === "studio") render();

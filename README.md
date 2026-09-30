@@ -7,10 +7,17 @@ A playable guitar-training app with six connected skill branches, live USB audio
 Install Node.js 22 or newer, then run in this folder:
 
 ```sh
+npm ci
 npm start
 ```
 
 Open **http://localhost:3210** in a current Chrome or Edge browser. Guitar Pro and MusicXML scores are parsed on your computer. The server binds only to your computer. Set `PORT` to change the port.
+
+## Optional account sign-in
+
+After `npm ci`, start the app with `npm start`. Open **Account** in the top bar to choose Apple, Google, Facebook, email/password, or **Continue without an account**. Guests can use lessons, live input, the tuner, imported songs, Song Studio, progression, and offline practice. Signing in restores the Supabase account session across refreshes but does not replace, upload, or delete any local progress. If existing progress is detected, the app asks how to handle it when cloud sync is built; the choice currently records intent only.
+
+Account sign-in is optional and requires developer configuration. Copy `.env.example` to an untracked `.env` and fill `SUPABASE_URL` and `SUPABASE_ANON_KEY` with the project's public URL and publishable/anon key. Never use a service-role key in the browser. Configure Google, Apple, and Facebook in their provider dashboards and Supabase Auth before their buttons can complete real login. Email confirmation, password recovery, redirect URLs, proposed private tables/RLS, and future Tauri considerations are described in [SUPABASE-SETUP.md](SUPABASE-SETUP.md). Missing configuration or internet never blocks local practice. Recordings remain local only.
 
 ## Play
 
@@ -57,7 +64,7 @@ Guided accuracy = hits / max(target count, attempts). Wrong attempts count even 
 
 The three strongest mastered skills automatically form your loadout; bonuses add to a maximum of 15%. Battle points = round(10 × accuracy × (1 + bonus / 100)). Bonuses never bypass accuracy requirements. Echo follows a fixed 940-point score target. Echo does not learn or adapt and is not a live player. Gold mastery opens Echo challenges for eligible skills; challenge wins are recorded per skill. Ties do not win.
 
-Demo and live profiles are stored separately in browser local storage. There are no accounts, cloud sync, multiplayer, or anti-cheat. Clearing browser data removes progress. Hiding the tab aborts an active attempt without awarding progress.
+Demo and live profiles are stored separately in browser local storage. Accounts are optional; cloud sync, multiplayer, and anti-cheat are not implemented. Clearing browser data removes progress. Hiding the tab aborts an active attempt without awarding progress.
 
 ## Audio recognition and honest limits
 

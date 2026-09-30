@@ -1,0 +1,56 @@
+# Optional accounts and proposed cloud schema
+
+Accounts are optional. The trainer reads and writes practice data locally even when signed in. This version does **not** upload, download, merge, or delete practice data in Supabase. Song Studio projects and recordings stay in IndexedDB. The account dialog's migration choice records intent for a later sync release only.
+
+## Local configuration
+
+1. Create a Supabase project. Run `npm ci` to build the browser bundle of the official Supabase JavaScript client.
+2. Copy `.env.example` to an untracked `.env`. Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` to the project URL and **publishable/anon** browser key. Never use a service-role key. Restart `npm start`.
+3. Add `http://localhost:3210/` to Supabase Auth redirect allowlist. Include every actual development/production origin and path. The app redirects back to its current origin and path, without the hash route.
+4. Verify email sign-up, verification links, sign-in, password recovery, and sign-out using a test account. Configure the Auth email sender/templates and rate limits for production.
+
+The local server exposes only the public URL/key at `/api/auth-config` and sends `Cache-Control: no-store`. If either is absent or invalid, it responds `{"configured":false}`. The app stays usable as a guest. OAuth credentials and any service-role key belong in Supabase/provider dashboards, never this browser app or Git.
+
+## Provider dashboards
+
+- **Google:** Configure Google's OAuth consent screen and client ID/secret; enable Google in Supabase Auth. Set the authorized callback to `https://<project-ref>.supabase.co/auth/v1/callback` and allow the app return URL in Supabase.
+- **Apple:** Configure an Apple Services ID, domain/return URL, and signing key in Apple's developer console; enable Apple in Supabase Auth. Apple's provider setup and renewal requirements must be maintained by the project owner.
+- **Facebook:** Configure a Meta developer app, Facebook Login callback, app domain, and client ID/secret; enable Facebook in Supabase Auth. Production login may require Meta app review.
+- **Email:** Enable email/password in Supabase Auth, configure confirmation and recovery emails, and allow the app redirect URL. The app never stores passwords itself.
+
+Provider buttons are wired through `public/auth/auth-service.js`, but real OAuth login cannot work until those external dashboards are configured. Use HTTPS for deployed origins. Browser auth uses Supabase PKCE/session persistence; never log tokens or authorization codes.
+
+## Proposed private tables for a later sync phase
+
+The following is a design, not a migration that this version applies. Use `auth.users(id)` as the owner; Auth stores passwords. Keep local record IDs stable for idempotent future sync, store timestamps/revisions for conflict handling, and enforce sensible size limits. Suggested columns:
+
+| Table | Suggested columns |
+| --- | --- |
+| `profiles` | `user_id` primary key, `display_name`, `created_at`, `updated_at` |
+| `skill_progress` | `id` primary key, `user_id`, `skill_id`, `xp`, `updated_at`; unique `(user_id, skill_id)` |
+| `practice_sessions` | `id` primary key, `user_id`, `lesson_id`, `accuracy`, `bpm`, `speed`, `created_at` |
+| `user_settings` | `user_id` primary key, `settings_json`, `updated_at` |
+| `song_projects` | `id` primary key, `user_id`, `project_json`, `updated_at` |
+
+Enable Row Level Security on **each** private table. Create separate SELECT, INSERT, UPDATE, and DELETE policies scoped to `auth.uid() = user_id`, with `WITH CHECK (auth.uid() = user_id)` for INSERT and UPDATE. For example:
+
+```sql
+alter table public.song_projects enable row level security;
+create policy "read own songs" on public.song_projects
+  for select to authenticated using ((select auth.uid()) = user_id);
+create policy "insert own songs" on public.song_projects
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+create policy "update own songs" on public.song_projects
+  for update to authenticated using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+create policy "delete own songs" on public.song_projects
+  for delete to authenticated using ((select auth.uid()) = user_id);
+```
+
+Repeat the ownership rule for the other four tables; test cross-user reads/writes before shipping sync. The public client key does **not** replace RLS. A future sync layer should require an explicit migration decision, upload only after a verified authenticated session, support conflicts and offline retries, and keep the local copy until confirmed. `pending-sync` currently means only that the player asked to be considered for that future flow.
+
+Do not store audio blobs in Postgres. Optional recording backup can later use Supabase Storage with private buckets, ownership policies, quotas, and an explicit opt-in. This release keeps recordings local only.
+
+## Future desktop packaging
+
+`auth-service.js` is independent of the UI redirect mechanism except for an injected `redirectUrl` function. A future Windows/macOS Tauri build must choose and allowlist a secure app/deep-link redirect, handle the callback in the desktop shell, and use appropriate protected session storage. Do not reuse localhost browser redirect assumptions or add Tauri before that work is designed and tested.
