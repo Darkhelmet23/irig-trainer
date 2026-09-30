@@ -17,3 +17,9 @@ Demo and live profiles use separate localStorage records (`irig-demo` and `irig-
 `curriculum.js`, `drills.js`, and imported song lessons feed `engine.js` session events. `app.js` handles guided/flow/battle interaction, audio matching, count-in, result persistence, and coaching display. Imported songs show a preparation screen and use a default two-bar count-in; regular drills default to one bar.
 
 First-run onboarding progress is stored under `irig-onboarding-v1`; it can be skipped and completes after the first session. The tree routes to related practice in the Lessons page and never launches a lesson itself.
+## Song Studio / Create
+
+- `public/song-studio.js` defines the versioned project/section model, progression helpers, riff capture mapping, transposition, snapshots, and conversion to unranked practice lessons. `song-studio-ui.js` owns the landing page and project/arrangement/chord/tab/notes/version/export UI; `riff-editor.js` renders and edits the six-string beat grid.
+- `song-studio-storage.js` stores structured projects and recording metadata in IndexedDB (`irig-song-studio`, `projects` store), with audio `Blob`s kept separately in its `recordings` store. Projects and takes remain browser-local; there are no accounts or upload/sync paths.
+- `song-studio-capture.js` uses an isolated input/capture path for experimental pitch-to-tab drafts and quick `MediaRecorder` takes. `jam-mode.js` loops a selected section and optional metronome without scoring.
+- Send to Practice converts the selected riff or chords into the existing timed song-session event shape. The existing preparation/count-in/session engine is reused, and studio lessons are marked unranked so they do not award Skill Tree XP.
