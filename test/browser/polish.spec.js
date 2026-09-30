@@ -46,9 +46,9 @@ test('imported song practice shows Bronze tempo, a two-bar count-in, a frozen la
   await expect(page.locator('#song-count-in')).toHaveValue('2');
   await page.locator('#song-practice-speed').selectOption('0.5');await page.locator('#song-practice-mode').selectOption('scrolling');
   await page.locator('#begin').click();
+  await page.clock.runFor(16);await expect(page.locator('#feedback')).toContainText('COUNT IN');
   const before=await page.locator('#event-0').evaluate(node=>node.style.left);
   await page.clock.runFor(500);expect(await page.locator('#event-0').evaluate(node=>node.style.left)).toBe(before);
-  await expect(page.locator('#feedback')).toContainText('COUNT IN');
   await page.clock.runFor(5200);expect(await page.locator('#event-0').evaluate(node=>node.style.left)).not.toBe(before);
   await page.locator('#exit-practice').click();
   for(let run=0;run<2;run++){
