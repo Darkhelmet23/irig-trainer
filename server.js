@@ -35,9 +35,10 @@ export function createServer() {
       const url=new URL(req.url,'http://localhost');
       if(req.method==='POST'&&url.pathname==='/api/import-score')return await importScore(req,res,url);
       if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405); return res.end(); }
-      const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+      const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname).replace(/\\/g, '/');
       const target = path.resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
-      if (!target.startsWith(root + path.sep)) { res.writeHead(403); return res.end(); }
+      const relative = path.relative(root, target);
+      if (relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)) { res.writeHead(403); return res.end(); }
       const data = await readFile(target);
       res.writeHead(200, { 'Content-Type': (types[path.extname(target)] || 'application/octet-stream') + '; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
       res.end(req.method === 'HEAD' ? undefined : data);
