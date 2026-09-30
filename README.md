@@ -1,6 +1,6 @@
-﻿# iRig Trainer
+# iRig Trainer
 
-A playable guitar-training app with six connected skill branches, live USB audio, guided lessons, scrolling practice, and an AI mastery challenge.
+A playable guitar-training app with six connected skill branches, live USB audio, guided lessons, scrolling practice, and a deterministic virtual rival.
 
 ## Run
 
@@ -55,7 +55,7 @@ Scale & Lead lessons cover major, natural minor, pentatonic, blues, and modes ac
 
 Guided accuracy = hits / max(target count, attempts). Wrong attempts count even though the exercise waits. Scrolling accuracy = hits / target count; a wrong note consumes that target, and late targets become misses. Accuracy is rounded to a whole percent. Each attack has equal weight. Skill-tree drills use one note per beat; imported songs retain their source note timing, durations, rests and ties. Rests and tied continuations are not scored as attacks.
 
-The three strongest mastered skills automatically form your loadout; bonuses add to a maximum of 15%. Battle points = round(10 × accuracy × (1 + bonus / 100)). Bonuses never bypass accuracy requirements. Echo is a deterministic simulated opponent with a 940-point target, not a neural network or a live player. Gold mastery opens Echo challenges for eligible skills; challenge wins are recorded per skill. Ties do not win.
+The three strongest mastered skills automatically form your loadout; bonuses add to a maximum of 15%. Battle points = round(10 × accuracy × (1 + bonus / 100)). Bonuses never bypass accuracy requirements. Echo follows a fixed 940-point score target. Echo does not learn or adapt and is not a live player. Gold mastery opens Echo challenges for eligible skills; challenge wins are recorded per skill. Ties do not win.
 
 Demo and live profiles are stored separately in browser local storage. There are no accounts, cloud sync, multiplayer, or anti-cheat. Clearing browser data removes progress. Hiding the tab aborts an active attempt without awarding progress.
 
@@ -118,6 +118,6 @@ Node tests cover progression, buffs, scoring, timing, pack validation, synthetic
 
 ## Next development steps
 
-Collect licensed real-guitar validation recordings; measure recognition precision and latency across iRig devices; improve voicing-invariant chord detection and onset detection; expand Guitar Pro and MusicXML import coverage; implement technique-specific grading; add profile sync and richer AI difficulty.
+Collect licensed real-guitar validation recordings; measure recognition precision and latency across iRig devices; improve voicing-invariant chord detection and onset detection; expand Guitar Pro and MusicXML import coverage; implement technique-specific grading; add profile sync and more adaptive difficulty.
 
 

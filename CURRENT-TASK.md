@@ -1,26 +1,25 @@
-﻿# Current task: Song Studio / Create
+# Current task: app structure, source cleanup, and validation
 
-## What changed
+Branch: feat/session-coach. Changes are local and are not committed or pushed.
 
-- Added a low-pressure Song Studio landing page and local projects with immediate blank/chord/riff/recording starts, metadata, autosave, arrangement sections, and selection/reordering.
-- Added chord progression editing and optional helpers, a six-string beat-grid tab editor with rests and simultaneous notes, per-section lyrics/notes, local scratch recordings, experimental pitch-to-tab capture, Jam mode, snapshots, and JSON/plain-text exports.
-- Added an unranked Send to Practice bridge using the existing timed-song preparation, tempo, count-in, and session flow. Studio practice does not award Skill Tree XP.
-- Kept structured projects and version snapshots in IndexedDB; audio blobs use a separate object store. Wired the Song Studio navigation and offline precache.
-- Fixed startup on the empty home view and prevented section/fret edits from rerendering away active input.
+## Changes
 
-## Modules
-
-`public/song-studio.js`, `song-studio-ui.js`, `song-studio-storage.js`, `song-studio-capture.js`, `riff-editor.js`, and `jam-mode.js`. Startup/navigation/style/service-worker wiring stays in existing modules. See `ARCHITECTURE.md` for ownership and storage details.
+- Moved session lifecycle, count-in, recording, scoring, results, adaptive retries, and coaching into public/practice/session.js. app.js keeps startup, page routing/composition, profile state, and the audio-to-attempt bridge.
+- Extracted arena rendering, tuner UI/controller, lesson setup/scale summary rendering, and page-level actions into focused modules (`arena-page.js`, `tuner-ui.js`, `lesson-session-ui.js`, `page-bindings.js`, and `practice/session.js`). Reduced `app.js` from about 55.5 KB to 28.5 KB and formatted it as readable source. Formatted touched JavaScript with cached Prettier; no project dependency was added.
+- Repaired malformed text in app.js, Song Studio UI, riff editor, and session output. Echo is labeled as a deterministic virtual rival. Navigation foregrounds Learn, Practice & songs, and Create.
+- Added new module paths to the service-worker precache and advanced its cache version. Added GitHub Actions for Node and Playwright tests.
+- Added HARDWARE-VALIDATION.md for physical iRig and representative Guitar Pro/MusicXML checks. No recognition algorithm changes were made.
+- style.css is already readable source (4,080 lines, 77.8 KB), so it was left visually unchanged.
 
 ## Validation
 
-- `npm test`: 49 passed.
-- `npx playwright test`: 23 passed, 1 failed. The existing synthesized live Web Audio test in `test/browser/app.spec.js` timed out after 120 seconds waiting for the detector to advance; the full run took 30.6 minutes.
-- `npx playwright test test/browser/song-studio.spec.js`: 4 passed, including create/edit/reload, Jam, mocked local recording, and Send to Practice.
+- npm test: 49 passed, 0 failed.
+- npx playwright test: 24 passed, 0 failed (about 3 minutes).
+- Focused endless-practice browser test: passed.
+- Service-worker asset validation passed as part of Node tests.
+- `git diff --check`: passed (Git only reported expected LF-to-CRLF notices for working files).
 
-## Known limits / follow-up
+## Remaining
 
-- Pitch-to-tab capture is experimental and the resulting tab needs manual correction.
-- Projects and audio takes stay in this browser profile; cloud sync and cross-device sharing are not included.
-- Exports are iRig Trainer JSON and readable chord/tab text; Guitar Pro, MusicXML, and MIDI export are future work.
-- Physical Windows/iRig latency/noise testing and importing representative real Guitar Pro/MusicXML files remain real-world validation.
+- Physical Windows/iRig tests and real Guitar Pro/MusicXML file checks remain unrun; follow HARDWARE-VALIDATION.md.
+- The software LICENSE choice is still pending; CONTENT-LICENSE.md only covers lesson content, so no code license was added.

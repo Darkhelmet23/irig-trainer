@@ -1,25 +1,23 @@
 # iRig Trainer architecture
 
-## Modules
+## Browser flow
 
-- `public/app.js` is the browser entry point and coordinates navigation, profile state, lesson setup, live input, session timing, and results. `song-practice-ui.js` renders imported-song preparation and tempo/count-in controls; `navigation.js`, `storage.js`, `profile-store.js`, `onboarding.js`, and the other focused UI modules own routing, persistence, setup, and page rendering.
-- `public/style.css` is the single stylesheet and owns the design tokens, components, responsive rules, and brand treatments. `skill-tree-ui.js` owns the six-branch tree layout; its `SKILL_TREE_GEOMETRY` values also set the CSS node dimensions.
-- `public/progression.js` maps practice to skills, gates nodes by prerequisite skill XP/rank, and defines mastery milestones. `public/engine.js` sanitizes/migrates profiles, builds sessions, grades attempts, and awards capped practice XP.
-- `public/curriculum.js` defines built-in tab/chord lessons and authored phrases. `drills.js` builds scale, fretboard, chord, ear, technique, and warm-up lessons; `lesson-patterns.js` combines authored phrases with light variation.
-- `public/audio.js` captures browser audio and detects pitch, onsets, and chords. `input-diagnostics.js`, `tunings.js`, `metronome.js`, and `session-controls.js` support device setup and practice controls.
-- `public/songs.js` stores imported songs in IndexedDB and creates track/section lessons. `score-worker.js` parses Guitar Pro and MusicXML through alphaTab; `score-import.js` handles server-side imports. `song-tempo.js` scales event timing by old/new speed and tempo-change BPM metadata by new/old speed, then proposes (but does not apply) faster practice speeds.
-- `public/service-worker.js` caches the app shell for offline use. Brand sources are the transparent vector `brand-wordmark.svg`, `brand-mark.svg`, `brand-mark-mono.svg`, and `brand-icon.svg`. The service worker precaches these assets with the app shell.
+- public/app.js starts the app, wires navigation and profile state, coordinates live audio input, and connects pages to practice. public/page-bindings.js owns page-level actions and callbacks. app.js delegates session lifecycle to public/practice/session.js, tuner behavior to public/tuner-ui.js, arena rendering to public/arena-page.js, and lesson setup markup to public/lesson-session-ui.js.
+- public/navigation.js owns route names and hash navigation. Skill Tree, lesson library, setup, progress, Song Studio, and import UI each have focused page modules.
+- public/style.css is the readable design system and responsive UI source. public/service-worker.js precaches the app shell and all static modules for offline use.
 
-## Progress and scoring
+## Progress and practice
 
-Demo and live profiles use separate localStorage records (`irig-demo` and `irig-live`). Profile XP, per-skill XP, rank history, sessions, and challenges live in the profile; profile migration is handled by `engine.js`/`progression.js`. Mastery ranks remain Bronze/Silver/Gold/Diamond at 100/250/500/900 skill XP. Lesson XP is based on completion, accuracy, difficulty, length, and improvement, with a daily repeat cap.
+- Demo and live profiles are separate localStorage records (irig-demo and irig-live). Profile XP, per-skill XP, ranks, history, and challenges live in the profile. public/engine.js sanitizes/migrates profiles, creates events, grades attempts, and awards capped lesson XP; public/progression.js maps skills, prerequisites, and mastery milestones.
+- Built-in lessons live in public/curriculum.js and public/lesson-patterns.js. Scale, fretboard, chord, ear, technique, and warm-up drills are generated in public/drills.js.
+- Audio capture and pitch/onset/chord detection live in public/audio.js. public/input-diagnostics.js, public/tunings.js, public/metronome.js, and public/session-controls.js support setup and practice.
+- public/practice/session.js owns guided/flow/battle runtime, count-in, recording, scoring, results, adaptive repeats, and session coaching. app.js passes current runtime state and callbacks into its controller. Audio recognition remains coordinated in app.js and submits attempts to the controller's current session.
 
-`curriculum.js`, `drills.js`, and imported song lessons feed `engine.js` session events. `app.js` handles guided/flow/battle interaction, audio matching, count-in, result persistence, and coaching display. Imported songs show a preparation screen and use a default two-bar count-in; regular drills default to one bar.
+## Songs and creation
 
-First-run onboarding progress is stored under `irig-onboarding-v1`; it can be skipped and completes after the first session. The tree routes to related practice in the Lessons page and never launches a lesson itself.
-## Song Studio / Create
+- Imported songs and events live in IndexedDB through public/songs.js. public/score-worker.js parses Guitar Pro and MusicXML through alphaTab; public/score-import.js handles server imports. public/song-tempo.js scales event timing and tempo-change BPM metadata and suggests—but does not apply—the next speed.
+- public/song-studio.js defines local project and lesson conversion rules. public/song-studio-storage.js stores project data and recording blobs in IndexedDB; song-studio-ui.js, riff-editor.js, song-studio-capture.js, and jam-mode.js own the editing and creative UI. Send to Practice reuses session preparation and scoring but remains unranked.
 
-- `public/song-studio.js` defines the versioned project/section model, progression helpers, riff capture mapping, transposition, snapshots, and conversion to unranked practice lessons. `song-studio-ui.js` owns the landing page and project/arrangement/chord/tab/notes/version/export UI; `riff-editor.js` renders and edits the six-string beat grid.
-- `song-studio-storage.js` stores structured projects and recording metadata in IndexedDB (`irig-song-studio`, `projects` store), with audio `Blob`s kept separately in its `recordings` store. Projects and takes remain browser-local; there are no accounts or upload/sync paths.
-- `song-studio-capture.js` uses an isolated input/capture path for experimental pitch-to-tab drafts and quick `MediaRecorder` takes. `jam-mode.js` loops a selected section and optional metronome without scoring.
-- Send to Practice converts the selected riff or chords into the existing timed song-session event shape. The existing preparation/count-in/session engine is reused, and studio lessons are marked unranked so they do not award Skill Tree XP.
+## Local state
+
+Onboarding is stored under irig-onboarding-v1. Tuning and practice preferences use irig-settings and irig-practice-settings. Imported scores, practice packs, and Song Studio projects remain local to the browser. There is no account or cloud sync.
