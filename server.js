@@ -5,7 +5,7 @@ import path from 'node:path';
 import {Worker} from 'node:worker_threads';
 try { process.loadEnvFile?.(fileURLToPath(new URL('./.env',import.meta.url))); } catch {}
 const root = path.resolve(fileURLToPath(new URL('./public/', import.meta.url)));
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.xml': 'application/xml' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.xml': 'application/xml' };
 export function publicSupabaseConfig(env=process.env){
   const url=String(env.SUPABASE_URL||'').trim(),key=String(env.SUPABASE_ANON_KEY||'').trim();
   let parsed;
@@ -57,12 +57,13 @@ export function createServer() {
       const relative = path.relative(root, target);
       if (relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)) { res.writeHead(403); return res.end(); }
       const data = await readFile(target);
-      res.writeHead(200, { 'Content-Type': (types[path.extname(target)] || 'application/octet-stream') + '; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
+      const extension=path.extname(target),contentType=types[extension]||'application/octet-stream';
+      res.writeHead(200, { 'Content-Type': contentType+(extension==='.png'?'':'; charset=utf-8'), 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
       res.end(req.method === 'HEAD' ? undefined : data);
     } catch { res.writeHead(404); res.end('Not found'); }
   });
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT || 3210);
-  createServer().listen(port, '127.0.0.1', () => console.log(`iRig Trainer ready at http://localhost:${port}`));
+  createServer().listen(port, '127.0.0.1', () => console.log(`RiffTree ready at http://localhost:${port}`));
 }

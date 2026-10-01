@@ -1,4 +1,4 @@
-const CACHE = "irig-trainer-static-v21";
+const CACHE = "irig-trainer-static-v22";
 const ASSETS = [
   "/",
   "/index.html",
@@ -54,10 +54,17 @@ const ASSETS = [
   "/tuner-ui.js",
   "/practice/session.js",
   "/manifest.webmanifest",
-  "/brand-icon.svg",
-  "/brand-mark.svg",
-  "/brand-mark-mono.svg",
-  "/brand-wordmark.svg",
+  "/rifftree-logo.png",
+  "/rifftree-wordmark.png",
+  "/rifftree-emblem.png",
+  "/rifftree-icon-192.png",
+  "/rifftree-icon-512.png",
+  "/rifftree-maskable-512.png",
+  "/rifftree-touch-180.png",
+  "/rifftree-favicon-32.png",
+  "/icons/google.svg",
+  "/icons/facebook.svg",
+  "/icons/email.svg",
 ];
 
 self.addEventListener("install", (event) => {

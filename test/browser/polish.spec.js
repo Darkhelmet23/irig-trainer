@@ -1,22 +1,34 @@
 import {test,expect} from '@playwright/test';
 
 test('startup shows the brand while the app initializes without adding an artificial wait',async({page})=>{
-  await page.route('**/app.js',async route=>{await new Promise(resolve=>setTimeout(resolve,250));await route.continue();});
-  await page.goto('/#tree',{waitUntil:'commit'});await expect(page.locator('.startup-splash')).toBeVisible();await expect(page.locator('.startup-splash')).toHaveCount(0);
+  let releaseModule;
+  const moduleGate=new Promise(resolve=>{releaseModule=resolve;});
+  await page.route('**/app.js',async route=>{await moduleGate;await route.continue();});
+  try{
+    await page.goto('/#tree',{waitUntil:'commit'});
+    await expect(page.locator('.startup-splash')).toBeVisible();
+    await expect(page.locator('.startup-splash img')).toHaveAttribute('src','/rifftree-emblem.png');
+  }finally{releaseModule();}
+  await expect(page.locator('.startup-splash')).toHaveCount(0);
 });
 
-test('vector wordmark loads sharply and fits the sidebar at desktop, tablet, and mobile widths',async({page})=>{
+test('RiffTree logo fits the sidebar at desktop, tablet, and mobile widths',async({page})=>{
   await page.goto('/#tree');
+  await expect(page).toHaveTitle(/^RiffTree/);
+  await expect(page.locator('.brand')).toHaveAttribute('aria-label','RiffTree home');
+  await expect(page.locator('body')).not.toContainText('iRig Trainer');
   for(const viewport of [{width:1920,height:1080},{width:1024,height:800},{width:390,height:844}]){
     await page.setViewportSize(viewport);
     await page.screenshot({path:'test-results/brand-' + viewport.width + '.png'});
-    const logo=await page.locator('.brand-logo').evaluate(image=>({complete:image.complete,naturalWidth:image.naturalWidth,rect:image.getBoundingClientRect().toJSON(),sidebar:document.querySelector('.sidebar').getBoundingClientRect().toJSON(),pageWidth:document.documentElement.scrollWidth}));
+    const logo=await page.locator('.brand-emblem').evaluate(image=>({complete:image.complete,naturalWidth:image.naturalWidth,rect:image.getBoundingClientRect().toJSON(),sidebar:document.querySelector('.sidebar').getBoundingClientRect().toJSON(),pageWidth:document.documentElement.scrollWidth}));
     expect(logo.complete).toBe(true);expect(logo.naturalWidth).toBeGreaterThan(0);expect(logo.rect.width).toBeLessThanOrEqual(logo.sidebar.width);expect(logo.pageWidth).toBeLessThanOrEqual(viewport.width);
+    if(viewport.width>530)await expect(page.locator('.brand-wordmark')).toBeVisible();
+    else await expect(page.locator('.brand-wordmark')).toBeHidden();
   }
 });
 test('a new player can onboard, practice Fundamentals, earn XP, and open the next skill',async({page})=>{
   await page.clock.install();await page.goto('/#tree');
-  await expect(page.locator('.onboarding-panel h2')).toHaveText('Welcome to iRig Trainer.');
+  await expect(page.locator('.onboarding-panel h2')).toHaveText('Welcome to RiffTree.');
   await page.locator('#onboarding-demo').click();await expect(page.locator('.onboarding-panel')).toContainText('tuning');
   await page.locator('#onboarding-tuning-next').click();await expect(page.locator('.onboarding-panel')).toContainText('Demo Mode');
   await page.locator('#onboarding-fundamentals').click();await expect(page.locator('#lesson-title')).toHaveText('Read Tab Numbers');

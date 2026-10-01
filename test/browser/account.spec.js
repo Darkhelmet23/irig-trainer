@@ -10,9 +10,12 @@ test('account screen offers Google, Facebook, email, recovery and guest access',
   await expect(page.locator('#account-dialog')).toHaveAttribute('open','');
   for(const provider of ['Google','Facebook'])
     await expect(page.getByRole('button',{name:`Continue with ${provider}`})).toBeVisible();
+  for(const provider of ['google','facebook'])
+    await expect(page.locator(`[data-provider="${provider}"] img[src="/icons/${provider}.svg"]`)).toBeVisible();
   await expect(page.getByRole('button',{name:'Continue with Apple'})).toHaveCount(0);
   await expect(page.locator('#account-email [name=email]')).toBeVisible();
   await expect(page.locator('#account-email [name=password]')).toBeVisible();
+  await expect(page.locator('#account-email img[src="/icons/email.svg"]')).toHaveCount(2);
   await expect(page.getByRole('button',{name:'Create account'})).toBeVisible();
   await page.getByRole('button',{name:'Forgot password?'}).click();
   await expect(page.locator('#account-forgot')).toBeVisible();
@@ -107,12 +110,14 @@ test('signed-in methods connect, report conflicts, and disconnect only when anot
   await page.locator('#account-email [name=password]').fill('longpassword');
   await page.locator('#account-email button[value="sign-in"]').click();
   await expect(page.locator('.account-methods')).toContainText('Email/password');
+  for(const provider of ['email','google','facebook'])
+    await expect(page.locator(`.account-methods img[src="/icons/${provider}.svg"]`)).toBeVisible();
   await expect(page.locator('.account-methods')).toContainText('Not connected');
   await page.getByRole('button',{name:'Connect Google'}).click();
   await expect(page.getByRole('button',{name:'Disconnect Google'})).toBeEnabled();
   await page.evaluate(()=>{window.facebookConflict=true});
   await page.getByRole('button',{name:'Connect Facebook'}).click();
-  await expect(page.locator('#account-message')).toHaveText('This Facebook account is already connected to another iRig Trainer account.');
+  await expect(page.locator('#account-message')).toHaveText('This Facebook account is already connected to another RiffTree account.');
   await page.evaluate(()=>{window.facebookConflict=false});
   await page.getByRole('button',{name:'Connect Facebook'}).click();
   await expect(page.getByRole('button',{name:'Disconnect Facebook'})).toBeEnabled();
@@ -139,7 +144,7 @@ test('identity conflict returned after OAuth redirects is shown without raw prov
     }}}` }));
   await page.goto('/?error=server_error&error_code=identity_already_exists&error_description=%3Cscript%3E');
   await expect(page.locator('#account-dialog')).toHaveAttribute('open','');
-  await expect(page.locator('#account-message')).toHaveText('That sign-in account is already connected to another iRig Trainer account.');
+  await expect(page.locator('#account-message')).toHaveText('That sign-in account is already connected to another RiffTree account.');
   await expect(page.locator('#account-message')).not.toContainText('<script>');
 });
 

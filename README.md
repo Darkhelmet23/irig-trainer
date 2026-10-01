@@ -1,6 +1,10 @@
-# iRig Trainer
+# RiffTree
 
 A playable guitar-training app with six connected skill branches, live USB audio, guided lessons, scrolling practice, and a deterministic virtual rival.
+
+RiffTree is the public product name. The GitHub repository remains `Darkhelmet23/irig-trainer`. Legacy localStorage keys, IndexedDB names, practice-bundle format identifiers, Supabase function/migration names, and auth storage keys retain their `irig` prefixes so existing local data and deployed integrations continue to work. Apple login remains deferred.
+
+The transparent source logo is preserved at `assets/rifftree-original.png`; run `scripts/build-rifftree-assets.ps1` on Windows to regenerate the optimized wordmark, emblem, favicon, and PWA icons. The palette pairs a cream sidebar and neutral charcoal practice surfaces with forest-green actions and warm-gold mastery accents.
 
 ## Run
 

@@ -1,10 +1,11 @@
-# iRig Trainer architecture
+# RiffTree architecture
 
 ## Browser flow
 
 - public/app.js starts the app, wires navigation and profile state, coordinates live audio input, and connects pages to practice. public/page-bindings.js owns page-level actions and callbacks. app.js delegates session lifecycle to public/practice/session.js, tuner behavior to public/tuner-ui.js, arena rendering to public/arena-page.js, and lesson setup markup to public/lesson-session-ui.js.
 - public/navigation.js owns route names and hash navigation. Skill Tree, lesson library, setup, progress, Song Studio, and import UI each have focused page modules.
 - public/style.css is the readable design system and responsive UI source. public/service-worker.js precaches the app shell and all static modules for offline use.
+- RiffTree is the public name; the repo remains `irig-trainer`. `assets/rifftree-original.png` is the unchanged transparent source, `scripts/build-rifftree-assets.ps1` creates optimized assets in `public/`, and `public/icons/` holds local Google, Facebook, and email marks. The service worker precaches these assets. Legacy `irig-*` localStorage/IndexedDB/auth keys, bundle format values, Supabase migration and function names, and cache namespace are retained for compatibility; only the visible product brand changed.
 
 ## Progress and practice
 

@@ -493,7 +493,7 @@ export function createSessionController({
         const box = $("#recording-playback");
         if (box)
           box.innerHTML = url
-            ? `<span>Listen to your run</span><audio controls src="${url}"></audio><a href="${url}" download="irig-practice.webm">Save recording</a>`
+            ? `<span>Listen to your run</span><audio controls src="${url}"></audio><a href="${url}" download="rifftree-practice.webm">Save recording</a>`
             : "<span>No live recording was captured.</span>";
       });
     }

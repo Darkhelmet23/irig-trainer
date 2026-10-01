@@ -2,7 +2,7 @@
 <!-- Original synthetic import test, CC0-1.0. No commercial song content. -->
 <score-partwise version="4.0">
  <work><work-title>Drop D Import Study</work-title></work>
- <identification><creator type="composer">iRig Trainer</creator><rights>CC0-1.0</rights></identification>
+ <identification><creator type="composer">RiffTree</creator><rights>CC0-1.0</rights></identification>
  <part-list>
   <score-part id="P1"><part-name>Drop D Guitar</part-name><midi-instrument id="I1"><midi-channel>1</midi-channel><midi-program>25</midi-program></midi-instrument></score-part>
   <score-part id="P2"><part-name>Melody without tabs</part-name><midi-instrument id="I2"><midi-channel>2</midi-channel><midi-program>1</midi-program></midi-instrument></score-part>

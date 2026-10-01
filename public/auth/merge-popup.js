@@ -26,7 +26,7 @@ async function run() {
   const { data, error } = await client.auth.getSession();
   if (error || !data?.session?.access_token) throw new Error("Other-account sign-in did not finish. Try again.");
   send({ status: "ready", accessToken: data.session.access_token });
-  status.textContent = "Account verified. You can return to iRig Trainer.";
+  status.textContent = "Account verified. You can return to RiffTree.";
   sessionStorage.removeItem("irig-merge-nonce");
 }
 run().catch((error) => {

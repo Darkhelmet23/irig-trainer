@@ -1,15 +1,15 @@
-# Current task: cloud account merge
+# Current task: RiffTree public rebrand
 
-Branch: `main`. Supported sign-in methods: email/password, Google, Facebook, and local guest mode. Apple is deferred. Normal Facebook sign-in still omits `redirectTo`.
+Branch: `main`. Public name: **RiffTree**. GitHub repository: `Darkhelmet23/irig-trainer` (unchanged). Apple authentication remains deferred; supported methods are email/password, Google, Facebook, and local guest mode.
 
 ## Changed
 
-- `supabase/migrations/20261001032929_merge_accounts.sql`: restricted preview and transactional merge RPCs, Storage preflight, idempotency marker. XP uses `MAX` per skill; history and projects use deterministic collision IDs; primary profile/settings win.
-- `supabase/functions/merge-accounts/`: verifies both Auth sessions, returns a sanitized preview, moves cloud app data, then deletes the secondary Auth user. Auth cleanup failure is recoverable.
-- `public/auth/merge-client.js`, `merge-popup.js`, `public/merge-auth.html`: isolated secondary email or popup OAuth sign-in. Account UI requires preview and explicit confirmation, then offers missing OAuth methods for relinking.
-- `public/index.html`, `app.js`, `service-worker.js`, `style.css`, auth service and account UI: route popup callbacks before primary startup and include merge assets offline. Local progress and Song Studio storage are untouched.
+- Transparent `ChatGPT Image Sep 30, 2026, 10_36_33 PM.png` from Downloads copied to `assets/rifftree-original.png` without modifying the original. `scripts/build-rifftree-assets.ps1` creates a full logo, wordmark, emblem, favicon, touch icon, and 192/512/maskable PWA icons.
+- `public/index.html`, `manifest.webmanifest`, `service-worker.js`, `style.css`, and relevant UI modules use RiffTree branding. Palette: cream sidebar, neutral charcoal practice surfaces, forest-green actions and progression paths, warm-gold XP/mastery accents.
+- `public/icons/` contains local Google, Facebook, and email marks used by sign-in, sign-in methods, and merge controls. Tests and documentation cover the new brand and PWA assets.
 
-## Validation and remaining
+## Compatibility and remaining work
 
-- `npm ci`, 74 Node tests, and 32 Playwright tests passed; the account subset passed again after UI cleanup. The SQL migration was first checked inside `BEGIN`/`ROLLBACK`, then applied to linked project `xqgkjxacbvppusrmpmmb`. Function `merge-accounts` is active with JWT verification. `anon` and `authenticated` cannot execute the merge RPC; `service_role` can. A token-free POST returned 401, and the localhost CORS preflight returned 204.
-- No real account merge was invoked. Commit/push, then manually test the main email/Google and secondary Facebook test accounts. Physical iRig validation and cloud sync remain future work.
+- Existing `irig-*` localStorage/IndexedDB/auth keys, practice-bundle format, Supabase migration/function names, and service-worker cache namespace remain unchanged to preserve profiles, projects, and deployed integrations. Only the cache version advances. The repo name remains `irig-trainer`.
+- Account merging still applies only to cloud table data; local progress and recordings stay local. Physical iRig hardware validation and cloud sync remain future work. Do not claim Apple login is supported.
+- `npm ci`, all 78 Node tests, and all 32 Playwright tests passed. The new PNG icon path is served as `image/png`; offline precache passed. Desktop/mobile screenshots show a fitted wordmark and emblem-only mobile header. The startup-splash browser test now waits deterministically for app startup. Run `git diff --check`, then commit and push `main`.

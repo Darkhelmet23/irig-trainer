@@ -98,9 +98,9 @@ test('identity conflicts and disabled linking show safe messages',async()=>{
   const sdk=mockAuth({identities:[{id:'email-id',provider:'email'}],linkError:{code:'identity_already_exists',message:'internal details'}});
   const service=createAuthService({loadClient:async()=>sdk});
   await service.initialize();sdk.emit('SIGNED_IN',{user});
-  await assert.rejects(service.linkIdentity('facebook'),/This Facebook account is already connected to another iRig Trainer account/);
+  await assert.rejects(service.linkIdentity('facebook'),/This Facebook account is already connected to another RiffTree account/);
   assert.equal(authCallbackMessage({search:'?error=server_error&error_code=identity_already_exists&error_description=%3Cscript%3E'}),
-    'That sign-in account is already connected to another iRig Trainer account.');
+    'That sign-in account is already connected to another RiffTree account.');
   assert.equal(authCallbackMessage({hash:'#error=server_error&error_code=manual_linking_disabled'}),
     'Account linking is not enabled in Supabase Auth settings yet.');
   const disabled=mockAuth({identities:[{id:'email-id',provider:'email'}],linkError:{code:'manual_linking_disabled'}});

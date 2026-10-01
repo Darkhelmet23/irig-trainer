@@ -1,5 +1,7 @@
 # Optional accounts and proposed cloud schema
 
+The public app name is **RiffTree**; its GitHub repo and some internal `irig-*` storage/auth identifiers remain unchanged for compatibility. Existing Supabase project, tables, migrations, and the deployed `merge-accounts` function do not need renaming. Apple authentication is still deferred.
+
 Accounts are optional. The trainer reads and writes practice data locally even when signed in. This version does **not** upload or download local practice data. A separate, explicit account-merge flow can merge records already present in the five Supabase application tables; it does not touch localStorage, IndexedDB, or recordings. The account dialog's local-progress migration choice records intent for a later sync release only.
 
 ## Local configuration

@@ -52,7 +52,7 @@ export function serializeSongProject(project){
 
 export function deserializeSongProject(serialized){
   const project=typeof serialized==='string'?JSON.parse(serialized):clone(serialized);
-  if(!project||!Array.isArray(project.sections)||!Array.isArray(project.arrangement))throw new Error('This is not an iRig Trainer Song Studio project.');
+  if(!project||!Array.isArray(project.sections)||!Array.isArray(project.arrangement))throw new Error('This is not an RiffTree Song Studio project.');
   project.schemaVersion=SONG_STUDIO_SCHEMA;
   project.sections=project.sections.map(section=>({...createSongSection(section.name),...section,chords:Array.isArray(section.chords)?section.chords:[],riff:Array.isArray(section.riff)?section.riff:[],lyrics:section.lyrics||'',notes:section.notes||''}));
   project.arrangement=project.arrangement.filter(id=>project.sections.some(section=>section.id===id));

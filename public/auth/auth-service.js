@@ -6,7 +6,7 @@ const GUEST = Object.freeze({ status: "guest", user: null });
 
 function identityError(error, provider) {
   if (error?.code === "identity_already_exists")
-    return new Error(`This ${provider === "facebook" ? "Facebook" : "Google"} account is already connected to another iRig Trainer account.`);
+    return new Error(`This ${provider === "facebook" ? "Facebook" : "Google"} account is already connected to another RiffTree account.`);
   if (error?.code === "manual_linking_disabled")
     return new Error("Account linking is not enabled in Supabase Auth settings yet.");
   return error;
@@ -18,7 +18,7 @@ export function authCallbackMessage(locationRef = globalThis.location) {
   const code = search.get("error_code") ||
     (hash.startsWith("#error=") ? new URLSearchParams(hash.slice(1)).get("error_code") : null);
   if (code === "identity_already_exists")
-    return "That sign-in account is already connected to another iRig Trainer account.";
+    return "That sign-in account is already connected to another RiffTree account.";
   if (code === "manual_linking_disabled")
     return "Account linking is not enabled in Supabase Auth settings yet.";
   return "";

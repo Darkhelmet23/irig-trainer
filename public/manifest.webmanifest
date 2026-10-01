@@ -1,15 +1,17 @@
 {
   "id": "/",
-  "name": "iRig Trainer - Guitar Practice",
-  "short_name": "iRig Trainer",
+  "name": "RiffTree - Guitar Practice",
+  "short_name": "RiffTree",
   "description": "Practice guitar with lessons, imported scores, drills, and progress tracking.",
   "start_url": "/#tree",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0d1420",
-  "theme_color": "#0d1420",
+  "background_color": "#111b16",
+  "theme_color": "#111b16",
   "orientation": "any",
   "icons": [
-    { "src": "/brand-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "/rifftree-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/rifftree-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/rifftree-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

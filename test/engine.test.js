@@ -146,5 +146,5 @@ test('chord classifier identifies independent synthesized PCM chords and rejects
 });
 test('HTTP serves app assets, rejects traversal and unsupported methods',async()=>{
   const server=createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  try{const base=`http://127.0.0.1:${server.address().port}`;const html=await fetch(base);assert.equal(html.status,200);assert.match(await html.text(),/iRig Trainer/);assert.equal((await fetch(base+'/audio.js')).status,200);assert.equal((await fetch(base+'/%2e%2e%5cpackage.json')).status,403);assert.equal((await fetch(base+'/%2e%2e%2fpackage.json')).status,403);assert.equal((await fetch(base+'/absent')).status,404);assert.equal((await fetch(base,{method:'POST'})).status,405);}finally{await new Promise(resolve=>server.close(resolve));}
+  try{const base=`http://127.0.0.1:${server.address().port}`;const html=await fetch(base);assert.equal(html.status,200);assert.match(await html.text(),/RiffTree/);assert.equal((await fetch(base+'/audio.js')).status,200);assert.equal((await fetch(base+'/%2e%2e%5cpackage.json')).status,403);assert.equal((await fetch(base+'/%2e%2e%2fpackage.json')).status,403);assert.equal((await fetch(base+'/absent')).status,404);assert.equal((await fetch(base,{method:'POST'})).status,405);}finally{await new Promise(resolve=>server.close(resolve));}
 });

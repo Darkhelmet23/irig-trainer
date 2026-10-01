@@ -592,7 +592,7 @@ function downloadPack() {
   const pack = {
     version: 1,
     title: "First light · E minor pentatonic",
-    author: "iRig Trainer",
+    author: "RiffTree",
     source: "https://github.com/Darkhelmet23/irig-trainer",
     license: "CC0-1.0",
     sequence: skillById("tabs-4").sequence.map(({ string, fret }) => ({
@@ -605,7 +605,7 @@ function downloadPack() {
   );
   const a = document.createElement("a");
   a.href = url;
-  a.download = "irig-lesson-example.json";
+  a.download = "rifftree-lesson-example.json";
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
