@@ -1,6 +1,26 @@
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 
+function signInMethodsMarkup(methods, methodsError, online) {
+  const connectedCount = methods ? Object.values(methods).filter(Boolean).length : 0;
+  const rows = [["email", "Email/password"], ["google", "Google"], ["facebook", "Facebook"]]
+    .map(([provider, label]) => {
+      const connected = !!methods?.[provider];
+      const status = methods ? (connected ? "Connected" : "Not connected") :
+        (methodsError ? "Unavailable" : "Checking...");
+      const action = provider === "email" || !methods ? "" : connected
+        ? `<button class="subtle-btn" type="button" data-account-unlink="${provider}"${connectedCount < 2 || !online ? " disabled" : ""}>Disconnect ${label}</button>`
+        : `<button class="outline-btn" type="button" data-account-link="${provider}"${!online ? " disabled" : ""}>Connect ${label}</button>`;
+      return `<div class="account-method"><div><strong>${label}</strong><span class="account-method-status${connected ? " is-connected" : ""}">${status}</span></div>${action}</div>`;
+    }).join("");
+  return '<section class="account-panel account-methods"><h3>Sign-in methods</h3>' +
+    '<p>Connect another sign-in method to this account. Disconnect requires another connected method. This does not move or merge practice data.</p>' +
+    '<div class="account-method-list">' + rows + '</div>' +
+    (methodsError ? '<p class="account-note">Could not load sign-in methods. ' +
+      '<button class="subtle-btn" type="button" data-account-action="retry-methods">Try again</button></p>' : '') +
+    '</section>';
+}
+
 export function accountMarkup({
   state,
   message = "",
@@ -8,6 +28,8 @@ export function accountMarkup({
   migration = null,
   decision = null,
   showMigrationChoices = false,
+  methods = null,
+  methodsError = "",
   online = true,
 }) {
   const user = state.user;
@@ -28,13 +50,12 @@ export function accountMarkup({
       '<input name="password" type="password" minlength="8" autocomplete="new-password" required></label>' +
       '<button class="primary" type="submit">Update password</button></form></section>';
   } else if (user) {
-    const providerText = user.providers.length ? user.providers.join(", ") : "Email account";
     body = '<section class="account-panel account-identity"><span class="eyebrow">SIGNED IN</span>' +
       '<h3>' + escapeHtml(user.displayName) + '</h3><p>' + escapeHtml(user.email) + '</p>' +
-      '<p class="tiny muted">Connected with ' + escapeHtml(providerText) + '</p>' +
       (!user.emailVerified && user.providers.includes("email")
         ? '<p class="account-note">Check your inbox to verify your email address.</p>' : '') +
       '<button class="outline-btn" type="button" data-account-action="sign-out">Sign out</button></section>';
+    body += signInMethodsMarkup(methods, methodsError, online);
     if (migration?.found) {
       if (!decision || showMigrationChoices) {
         body += '<section class="account-panel account-migration"><span class="eyebrow">LOCAL PROGRESS</span>' +
@@ -66,7 +87,6 @@ export function accountMarkup({
   } else {
     body = '<section class="account-panel"><h3>Continue with an account</h3>' +
       '<div class="account-provider-list">' +
-      '<button class="outline-btn" type="button" data-provider="apple">Continue with Apple</button>' +
       '<button class="outline-btn" type="button" data-provider="google">Continue with Google</button>' +
       '<button class="outline-btn" type="button" data-provider="facebook">Continue with Facebook</button>' +
       '</div><div class="account-divider"><span>or use email</span></div>' +
@@ -99,6 +119,10 @@ export function createAccountUI({
   let decision = null;
   let migrationFor = null;
   let showMigrationChoices = false;
+  let methods = null;
+  let methodsError = "";
+  let methodsFor = null;
+  let methodsRequest = 0;
   let busy = false;
   const content = dialog.querySelector("#account-content");
 
@@ -110,6 +134,7 @@ export function createAccountUI({
     if (!dialog.open) return;
     content.innerHTML = accountMarkup({
       state, message, view, migration, decision, showMigrationChoices,
+      methods: state.user?.id === methodsFor ? methods : null, methodsError,
       online: isOnline(),
     });
   }
@@ -130,9 +155,29 @@ export function createAccountUI({
       // Storage errors must never block account controls or local practice.
     }
   }
+  async function refreshMethods() {
+    const request = ++methodsRequest;
+    const id = auth.getSession().user?.id;
+    methodsFor = id || null;
+    methods = null;
+    methodsError = "";
+    render();
+    if (!id) return;
+    try {
+      const found = await auth.getSignInMethods();
+      if (request !== methodsRequest || auth.getSession().user?.id !== id) return;
+      methods = found;
+    } catch {
+      if (request !== methodsRequest || auth.getSession().user?.id !== id) return;
+      methodsError = "unavailable";
+    }
+    render();
+    return methods;
+  }
   function open() {
     if (!dialog.open) dialog.showModal();
     render();
+    if (auth.getSession().user) void refreshMethods();
   }
   function close() {
     if (dialog.open) dialog.close();
@@ -159,6 +204,22 @@ export function createAccountUI({
       if (!button) return;
       const provider = button.dataset.provider;
       if (provider) return void run(() => auth.signInWithProvider(provider));
+      const linkProvider = button.dataset.accountLink;
+      if (linkProvider) return void run(async () => {
+        await auth.linkIdentity(linkProvider);
+        const updated = await refreshMethods();
+        message = updated?.[linkProvider]
+          ? `${linkProvider === "google" ? "Google" : "Facebook"} connected to this account.`
+          : "Finish the provider sign-in to connect it to this account.";
+      });
+      const unlinkProvider = button.dataset.accountUnlink;
+      if (unlinkProvider) return void run(async () => {
+        await auth.unlinkIdentity(unlinkProvider);
+        const updated = await refreshMethods();
+        message = updated && !updated[unlinkProvider]
+          ? `${unlinkProvider === "google" ? "Google" : "Facebook"} disconnected from this account.`
+          : "Refresh sign-in methods to confirm the change.";
+      });
       const choice = button.dataset.migration;
       if (choice) {
         const id = auth.getSession().user?.id;
@@ -175,6 +236,7 @@ export function createAccountUI({
         case "forgot": view = "forgot"; message = ""; render(); break;
         case "back": view = "sign-in"; message = ""; render(); break;
         case "sign-out": void run(() => auth.signOut()); break;
+        case "retry-methods": void refreshMethods(); break;
         case "review-migration": showMigrationChoices = true; render(); break;
       }
     });
@@ -212,6 +274,12 @@ export function createAccountUI({
           (state.user && state.user.id !== migrationFor))
         void refreshMigration();
       else if (event === "SIGNED_OUT") void refreshMigration();
+      if (["SIGNED_IN", "INITIAL_SESSION", "SIGNED_OUT", "USER_UPDATED"].includes(event))
+        void refreshMethods();
+      if (state.callbackError && ["INITIAL_SESSION", "UNAVAILABLE"].includes(event)) {
+        message = state.callbackError;
+        open();
+      }
       if (event === "PASSWORD_RECOVERY" && !document.querySelector("#lesson-dialog")?.open)
         open();
       render();

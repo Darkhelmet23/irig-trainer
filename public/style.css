@@ -24,9 +24,17 @@
 .account-message,.account-offline{margin:12px 0 0;color:var(--warning)}
 .account-message:empty{display:none}
 .account-identity h3{margin:6px 0}
+.account-methods>p{margin:0 0 14px;color:var(--muted);font-size:var(--text-sm)}
+.account-method-list{display:grid;gap:8px}
+.account-method{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line-soft)}
+.account-method>div{display:grid;gap:3px}
+.account-method-status{color:var(--muted);font-size:var(--text-sm)}
+.account-method-status.is-connected{color:var(--success)}
+.account-method button{flex:none}
+.account-method button:disabled{opacity:.5;cursor:not-allowed}
 .account-migration p{margin-bottom:14px}
 #account-dialog .close-btn{flex:none}
-@media(max-width:720px){.account-entry{max-width:130px;font-size:11px;padding:7px 9px}.account-shell{padding:18px}}
+@media(max-width:720px){.account-entry{max-width:130px;font-size:11px;padding:7px 9px}.account-shell{padding:18px}.account-method{align-items:flex-start;flex-direction:column}.account-method button{width:100%}}
 
 /* Design tokens */
 :root {

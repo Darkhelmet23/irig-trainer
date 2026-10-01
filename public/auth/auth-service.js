@@ -1,8 +1,28 @@
 import { loadSupabaseClient } from "./supabase-client.js";
 
-const PROVIDERS = new Set(["apple", "google", "facebook"]);
-const ACCOUNT_PROVIDERS = new Set(["apple", "google", "facebook", "email"]);
+const PROVIDERS = new Set(["google", "facebook"]);
+const ACCOUNT_PROVIDERS = new Set(["google", "facebook", "email"]);
 const GUEST = Object.freeze({ status: "guest", user: null });
+
+function identityError(error, provider) {
+  if (error?.code === "identity_already_exists")
+    return new Error(`This ${provider === "facebook" ? "Facebook" : "Google"} account is already connected to another iRig Trainer account.`);
+  if (error?.code === "manual_linking_disabled")
+    return new Error("Account linking is not enabled in Supabase Auth settings yet.");
+  return error;
+}
+
+export function authCallbackMessage(locationRef = globalThis.location) {
+  const search = new URLSearchParams(locationRef?.search || "");
+  const hash = String(locationRef?.hash || "");
+  const code = search.get("error_code") ||
+    (hash.startsWith("#error=") ? new URLSearchParams(hash.slice(1)).get("error_code") : null);
+  if (code === "identity_already_exists")
+    return "That sign-in account is already connected to another iRig Trainer account.";
+  if (code === "manual_linking_disabled")
+    return "Account linking is not enabled in Supabase Auth settings yet.";
+  return "";
+}
 
 function cleanText(value, limit = 160) {
   return typeof value === "string"
@@ -64,18 +84,23 @@ export function createAuthService({
   let client = null;
   let initializing = null;
   let subscription = null;
+  let linkedIdentities = [];
+  const callbackError = authCallbackMessage();
   const listeners = new Set();
   const snapshot = () => ({
     status: account.status,
     user: account.user ? { ...account.user, providers: [...account.user.providers] } : null,
     availability,
     recovery,
+    callbackError,
   });
   function notify(event) {
     for (const listener of listeners) listener(snapshot(), event);
   }
   function applySession(session, event) {
+    const previousId = account.user?.id;
     account = normalizeAccount(session);
+    if (account.user?.id !== previousId) linkedIdentities = [];
     if (event === "PASSWORD_RECOVERY") recovery = true;
     if (event === "SIGNED_OUT") recovery = false;
     notify(event);
@@ -140,6 +165,43 @@ export function createAuthService({
     });
     if (error) throw error;
   }
+  async function authenticatedClient() {
+    const sdk = await requireClient();
+    if (!account.user?.id) throw new Error("Sign in before changing sign-in methods.");
+    return sdk;
+  }
+  async function getSignInMethods() {
+    const sdk = await authenticatedClient();
+    const userId = account.user.id;
+    const { data, error } = await sdk.auth.getUserIdentities();
+    if (error) throw error;
+    if (account.user?.id !== userId) throw new Error("Your account changed. Open sign-in methods again.");
+    if (!Array.isArray(data?.identities)) throw new Error("Sign-in methods are unavailable right now.");
+    linkedIdentities = data.identities.filter((identity) =>
+      identity && ACCOUNT_PROVIDERS.has(identity.provider));
+    return Object.fromEntries([...ACCOUNT_PROVIDERS].map((provider) =>
+      [provider, linkedIdentities.some((identity) => identity.provider === provider)]));
+  }
+  async function linkIdentity(provider) {
+    if (!PROVIDERS.has(provider)) throw new Error("Choose a supported sign-in provider.");
+    const sdk = await authenticatedClient();
+    const methods = await getSignInMethods();
+    if (methods[provider]) throw new Error("That sign-in method is already connected.");
+    const { error } = await sdk.auth.linkIdentity({ provider });
+    if (error) throw identityError(error, provider);
+  }
+  async function unlinkIdentity(provider) {
+    if (!PROVIDERS.has(provider)) throw new Error("Choose a supported sign-in provider.");
+    const sdk = await authenticatedClient();
+    await getSignInMethods();
+    const identity = linkedIdentities.find((entry) => entry.provider === provider);
+    if (!identity) throw new Error("That sign-in method is not connected.");
+    if (new Set(linkedIdentities.map((entry) => entry.provider)).size < 2)
+      throw new Error("Keep at least one other sign-in method connected.");
+    const { error } = await sdk.auth.unlinkIdentity(identity);
+    if (error) throw error;
+    return getSignInMethods();
+  }
   async function signInWithEmail(email, password) {
     const sdk = await requireClient();
     const result = await sdk.auth.signInWithPassword({
@@ -195,9 +257,11 @@ export function createAuthService({
     },
     getSession: snapshot,
     signInWithProvider,
-    signInWithApple: () => signInWithProvider("apple"),
     signInWithGoogle: () => signInWithProvider("google"),
     signInWithFacebook: () => signInWithProvider("facebook"),
+    getSignInMethods,
+    linkIdentity,
+    unlinkIdentity,
     signInWithEmail,
     signUpWithEmail,
     forgotPassword,

@@ -1,4 +1,4 @@
-const CACHE = "irig-trainer-static-v19";
+const CACHE = "irig-trainer-static-v20";
 const ASSETS = [
   "/",
   "/index.html",

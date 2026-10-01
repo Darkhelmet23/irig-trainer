@@ -14,11 +14,18 @@ The local server exposes only the public URL/key at `/api/auth-config` and sends
 ## Provider dashboards
 
 - **Google:** Configure Google's OAuth consent screen and client ID/secret; enable Google in Supabase Auth. Set the authorized callback to `https://<project-ref>.supabase.co/auth/v1/callback` and allow the app return URL in Supabase.
-- **Apple:** Configure an Apple Services ID, domain/return URL, and signing key in Apple's developer console; enable Apple in Supabase Auth. Apple's provider setup and renewal requirements must be maintained by the project owner.
 - **Facebook:** Configure a Meta developer app, Facebook Login callback, app domain, and client ID/secret; enable Facebook in Supabase Auth. Production login may require Meta app review.
 - **Email:** Enable email/password in Supabase Auth, configure confirmation and recovery emails, and allow the app redirect URL. The app never stores passwords itself.
 
-Provider buttons are wired through `public/auth/auth-service.js`, but real OAuth login cannot work until those external dashboards are configured. Use HTTPS for deployed origins. Browser auth uses Supabase PKCE/session persistence; never log tokens or authorization codes.
+Apple authentication is intentionally deferred because it requires the paid Apple Developer Program. It is not offered by the current app.
+
+Provider buttons are wired through `public/auth/auth-service.js`, but real OAuth login cannot work until those external dashboards are configured. Use HTTPS for deployed origins. Browser auth uses Supabase PKCE/session persistence; never log tokens or authorization codes. Facebook's normal sign-in uses the Supabase Auth Site URL instead of an explicit `redirectTo`; Google retains its app redirect.
+
+### Manual sign-in-method linking
+
+In the Supabase Dashboard, open **Authentication → Settings → General** and enable **Allow manual linking**. This is disabled by default in the generated `supabase/config.toml`; changing that local file does not enable the hosted project's dashboard setting. A signed-in player can then use **Account → Sign-in methods** to connect Google or Facebook to the current Supabase user. The app reads linked identities with `getUserIdentities()`, starts OAuth linking with `linkIdentity({ provider })`, and only allows `unlinkIdentity(identity)` when another supported sign-in method remains. Do not turn on Supabase anonymous sign-ins for guest mode.
+
+An OAuth provider with a different email may create a separate Supabase user if used for normal sign-in instead of Connect. If an identity already belongs to another user, the app reports the conflict and does not merge accounts. Duplicate-account and data merging are deferred. Linking is separate from cloud sync: local XP, recordings, Song Studio data, and imported songs are not moved or uploaded.
 
 ## Repository schema for a later sync phase
 
