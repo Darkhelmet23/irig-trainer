@@ -40,10 +40,18 @@ test('account model normalizes and sanitizes malformed metadata',()=>{
   assert.equal(normalizeAccount({user:{id:'\u0000',user_metadata:['bad']}}).status,'guest');
 });
 test('OAuth provider selection uses one service and safe redirect',async()=>{
-  const sdk=mockAuth(),service=createAuthService({loadClient:async()=>sdk,redirectUrl:()=> 'https://trainer.example/app'});
+  let redirects=0;
+  const sdk=mockAuth(),service=createAuthService({loadClient:async()=>sdk,redirectUrl:()=>{
+    redirects++;
+    return 'https://trainer.example/app';
+  }});
   await service.signInWithApple();await service.signInWithGoogle();await service.signInWithFacebook();
-  assert.deepEqual(sdk.calls.map(x=>x.provider),['apple','google','facebook']);
-  assert.deepEqual(sdk.calls.map(x=>x.options.redirectTo),Array(3).fill('https://trainer.example/app'));
+  assert.deepEqual(sdk.calls,[
+    {provider:'apple',options:{redirectTo:'https://trainer.example/app'}},
+    {provider:'google',options:{redirectTo:'https://trainer.example/app'}},
+    {provider:'facebook'},
+  ]);
+  assert.equal(redirects,2);
   await assert.rejects(service.signInWithProvider('other'),/supported/);
   assert.equal(browserRedirectUrl({protocol:'https:',origin:'https://trainer.example',pathname:'/app',hash:'#tree'}),'https://trainer.example/app');
 });

@@ -136,7 +136,7 @@ export function createAuthService({
     const sdk = await requireClient();
     const { error } = await sdk.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: redirectUrl() },
+      ...(provider === "facebook" ? {} : { options: { redirectTo: redirectUrl() } }),
     });
     if (error) throw error;
   }

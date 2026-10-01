@@ -26,6 +26,7 @@ test('account screen offers all providers, email, recovery and guest access',asy
 });
 
 test('unconfigured authentication reports a useful error while guest practice remains open',async({page})=>{
+  await page.route('**/api/auth-config',route=>route.fulfill({json:{configured:false}}));
   await page.goto('/');await page.locator('#account-open').click();
   await page.getByRole('button',{name:'Continue with Google'}).click();
   await expect(page.locator('#account-message')).toContainText('not configured');
