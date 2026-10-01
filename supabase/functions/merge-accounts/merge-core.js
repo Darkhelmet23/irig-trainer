@@ -53,6 +53,8 @@ export function createMergeHandler({ admin, allowedOrigins }) {
         alreadyMerged: !!preview.data.alreadyMerged,
         providersToLink: secondaryProviders.filter((provider) => oauth.has(provider) && !primaryProviders.includes(provider)),
         duplicateProviders: secondaryProviders.filter((provider) => oauth.has(provider) && primaryProviders.includes(provider)),
+        emailSetupRequired: secondaryProviders.includes("email") && !primaryProviders.includes("email"),
+        secondaryEmail: secondaryProviders.includes("email") ? secondary.email || null : null,
       };
       if (body.operation === "preview") return reply(200, details, origin);
       const merged = await admin.rpc("merge_user_data", params);
@@ -67,7 +69,8 @@ export function createMergeHandler({ admin, allowedOrigins }) {
         error: "Cloud data was preserved, but the other account could not be removed. Please retry the merge; it is safe to retry.",
       }, origin);
       return reply(200, { status: "merged", providersToLink: details.providersToLink,
-        duplicateProviders: details.duplicateProviders }, origin);
+        duplicateProviders: details.duplicateProviders,
+        emailSetupRequired: details.emailSetupRequired, secondaryEmail: details.secondaryEmail }, origin);
     } catch {
       return reply(500, { error: "The account service is unavailable. Check account status before retrying." }, origin);
     }

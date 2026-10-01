@@ -241,6 +241,11 @@ export function createAuthService({
     recovery = false;
     notify("PASSWORD_UPDATED");
   }
+  async function requestEmailChange(email) {
+    const sdk = await authenticatedClient();
+    const { error } = await sdk.auth.updateUser({ email: emailAddress(email) });
+    if (error) throw error;
+  }
   async function signOut() {
     if (client) {
       const { error } = await client.auth.signOut({ scope: "local" });
@@ -275,6 +280,7 @@ export function createAuthService({
     signUpWithEmail,
     forgotPassword,
     updatePassword,
+    requestEmailChange,
     signOut,
     dispose() { subscription?.unsubscribe?.(); listeners.clear(); },
   };

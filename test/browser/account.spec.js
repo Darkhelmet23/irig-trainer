@@ -187,10 +187,100 @@ test('merge requires preview and confirmation while keeping primary sign-in and 
   expect(calls).toEqual(['preview']);
   await expect(page.locator('.account-merge')).toContainText('4 skills');
   await page.getByRole('button',{name:'Merge accounts',exact:true}).click();
-  await expect(page.locator('.account-merge')).toContainText('Accounts merged');
+  await expect(page.locator('.account-merge')).toContainText('DATA MERGED');
+  await expect(page.locator('.account-merge')).toContainText('Facebook');
+  await expect(page.locator('.account-merge')).toContainText('Connect');
   expect(calls).toEqual(['preview','merge']);
   await expect(page.locator('#account-status')).toHaveText('Player');
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('irig-demo')).xp)).toBe(155);
+  const pending=await page.evaluate(()=>JSON.parse(localStorage.getItem('irig-merge-restoration-v1')));
+  expect(pending).toMatchObject({primaryId:'main-user',providers:['facebook'],dataMerged:true});
+  expect(JSON.stringify(pending)).not.toContain('token');
+  await page.locator('.account-merge [data-restore-skip="facebook"]').click();
+  await expect(page.locator('.account-merge')).toContainText('Your RiffTree account is ready');
+  expect(await page.evaluate(()=>localStorage.getItem('irig-merge-restoration-v1'))).toBeNull();
+});
+
+test('pending restoration resumes only for the primary user and linking clears it',async({page})=>{
+  await page.addInitScript(()=>{
+    localStorage.setItem('mock-authenticated','yes');
+    if(!localStorage.getItem('irig-merge-restoration-v1'))localStorage.setItem('irig-merge-restoration-v1',JSON.stringify({version:1,primaryId:'main-user',
+      providers:['google','facebook'],emailRequired:false,email:null,emailConfirmationPending:false,dataMerged:true,timestamp:1}));
+  });
+  await page.route('**/api/auth-config',route=>route.fulfill({json:{configured:true,url:'https://example.supabase.co',anonKey:'sb_publishable_'+'a'.repeat(24)}}));
+  await page.route('**/vendor/supabase-sdk.js',route=>route.fulfill({contentType:'text/javascript',body:`
+    export function createClient(){
+      const user={id:localStorage.getItem('mock-user-id')||'main-user',email:'main@example.com',user_metadata:{display_name:'Player'},app_metadata:{providers:['email']}};
+      return {auth:{
+        onAuthStateChange(){return {data:{subscription:{unsubscribe(){}}}}},
+        async getSession(){return {data:{session:localStorage.getItem('mock-authenticated')?{user}:null},error:null}},
+        async getUserIdentities(){return {data:{identities:[{provider:'email'},...JSON.parse(localStorage.getItem('mock-identities')||'[]').map(provider=>({provider}))]},error:null}},
+        async linkIdentity({provider}){const methods=JSON.parse(localStorage.getItem('mock-identities')||'[]');methods.push(provider);localStorage.setItem('mock-identities',JSON.stringify(methods));return {error:null}}
+      }};
+    }` }));
+  await page.goto('/');await page.locator('#account-open').click();
+  await expect(page.locator('.account-merge')).toContainText('DATA MERGED');
+  await page.locator('.account-merge [data-account-link="google"]').click();
+  await expect(page.locator('.account-merge')).toContainText('Google');
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('irig-merge-restoration-v1')).providers)).toEqual(['facebook']);
+  await page.reload();await page.locator('#account-open').click();
+  await expect(page.locator('.account-merge')).toContainText('DATA MERGED');
+  await page.locator('.account-merge [data-account-link="facebook"]').click();
+  await expect(page.locator('.account-merge')).toContainText('Your RiffTree account is ready');
+  expect(await page.evaluate(()=>localStorage.getItem('irig-merge-restoration-v1'))).toBeNull();
+  await page.evaluate(()=>{localStorage.setItem('mock-user-id','other-user');localStorage.setItem('irig-merge-restoration-v1',JSON.stringify({version:1,primaryId:'main-user',providers:['google'],emailRequired:false,email:null,emailConfirmationPending:false,dataMerged:true,timestamp:1}))});
+  await page.reload();await page.locator('#account-open').click();
+  await expect(page.locator('.account-merge')).toHaveCount(1);
+  await expect(page.locator('.account-merge')).not.toContainText('DATA MERGED');
+});
+
+test('email restoration sets a new password for primary email and retains secondary address only as context',async({page})=>{
+  await page.addInitScript(()=>{
+    localStorage.setItem('mock-authenticated','yes');
+    if(!localStorage.getItem('irig-merge-restoration-v1'))localStorage.setItem('irig-merge-restoration-v1',JSON.stringify({version:1,primaryId:'main-user',
+      providers:[],emailRequired:true,email:'other@example.com',emailConfirmationPending:false,dataMerged:true,timestamp:1}));
+  });
+  await page.route('**/api/auth-config',route=>route.fulfill({json:{configured:true,url:'https://example.supabase.co',anonKey:'sb_publishable_'+'a'.repeat(24)}}));
+  await page.route('**/vendor/supabase-sdk.js',route=>route.fulfill({contentType:'text/javascript',body:`
+    export function createClient(){const user={id:'main-user',email:'main@example.com',email_confirmed_at:'2026-01-01',user_metadata:{display_name:'Player'},app_metadata:{providers:['facebook']}};
+      return {auth:{onAuthStateChange(){return {data:{subscription:{unsubscribe(){}}}}},
+        async getSession(){return {data:{session:{user}},error:null}},
+        async getUserIdentities(){return {data:{identities:[{provider:'facebook'}]},error:null}},
+        async updateUser(value){window.passwordUpdate=value;return {data:{user},error:null}}
+      }};
+    }` }));
+  await page.goto('/');await page.locator('#account-open').click();
+  await expect(page.locator('.account-merge')).toContainText('Your primary email stays main@example.com');
+  await expect(page.locator('.account-merge')).toContainText('previous password does not carry over');
+  await page.locator('#account-merge-password [name=password]').fill('newpassword123');
+  await page.locator('#account-merge-password button').click();
+  await expect(page.locator('.account-merge')).toContainText('Your RiffTree account is ready');
+  expect(await page.evaluate(()=>window.passwordUpdate)).toEqual({password:'newpassword123'});
+  expect(await page.evaluate(()=>localStorage.getItem('irig-merge-restoration-v1'))).toBeNull();
+});
+
+test('email restoration requests verification when primary has no email',async({page})=>{
+  await page.addInitScript(()=>{
+    if(!localStorage.getItem('irig-merge-restoration-v1'))localStorage.setItem('irig-merge-restoration-v1',JSON.stringify({version:1,primaryId:'main-user',
+      providers:[],emailRequired:true,email:'other@example.com',emailConfirmationPending:false,dataMerged:true,timestamp:1}));
+  });
+  await page.route('**/api/auth-config',route=>route.fulfill({json:{configured:true,url:'https://example.supabase.co',anonKey:'sb_publishable_'+'a'.repeat(24)}}));
+  await page.route('**/vendor/supabase-sdk.js',route=>route.fulfill({contentType:'text/javascript',body:`
+    export function createClient(){const user={id:'main-user',email:'',user_metadata:{display_name:'Player'},app_metadata:{providers:['facebook']}};
+      return {auth:{onAuthStateChange(){return {data:{subscription:{unsubscribe(){}}}}},
+        async getSession(){return {data:{session:{user}},error:null}},
+        async getUserIdentities(){return {data:{identities:[{provider:'facebook'}]},error:null}},
+        async updateUser(value){window.emailUpdate=value;return {data:{user},error:null}}
+      }};
+    }` }));
+  await page.goto('/');await page.locator('#account-open').click();
+  await expect(page.locator('#account-merge-email-setup')).toBeVisible();
+  await expect(page.locator('#account-merge-password')).toHaveCount(0);
+  await page.locator('#account-merge-email-setup button').click();
+  await expect(page.locator('.account-merge')).toContainText('Email confirmation pending');
+  expect(await page.evaluate(()=>window.emailUpdate)).toEqual({email:'other@example.com'});
+  await page.reload();await page.locator('#account-open').click();
+  await expect(page.locator('.account-merge')).toContainText('Email confirmation pending');
 });
 
 test('secondary Facebook popup returns through isolated PKCE callback without replacing primary',async({page,context})=>{

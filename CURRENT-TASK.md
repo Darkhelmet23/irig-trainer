@@ -2,6 +2,8 @@
 
 Branch: `main`. Public name: **RiffTree**. GitHub repository: `Darkhelmet23/irig-trainer` (unchanged). Apple authentication remains deferred; supported methods are email/password, Google, Facebook, and local guest mode.
 
+Account merge now has a post-deletion restoration stage: missing Google/Facebook providers use manual linking, and an OAuth primary can set a new password for its primary email. `irig-merge-restoration-v1` resumes unfinished steps for the surviving user after refresh; explicit skip clears each step. Cloud XP uses MAX per skill, practice sessions and Song Studio projects are preserved, and local-only data is untouched. The secondary email and old password are not transferred automatically.
+
 ## Changed
 
 - Transparent `ChatGPT Image Sep 30, 2026, 10_36_33 PM.png` from Downloads copied to `assets/rifftree-original.png` without modifying the original. `scripts/build-rifftree-assets.ps1` creates a full logo, wordmark, emblem, favicon, touch icon, and 192/512/maskable PWA icons.

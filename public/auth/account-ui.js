@@ -1,3 +1,5 @@
+import { createMergeRestorationStore } from "./merge-restoration.js";
+
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 const providerIcon = (provider) => ["google", "facebook", "email"].includes(provider)
@@ -24,7 +26,7 @@ function signInMethodsMarkup(methods, methodsError, online) {
     '</section>';
 }
 
-function mergeMarkup(merge, user, online) {
+function mergeMarkup(merge, user, online, methods) {
   const identity = `<strong>${escapeHtml(user.email || user.displayName)}</strong>`;
   if (merge.step === "preview") {
     const data = merge.preview;
@@ -37,12 +39,30 @@ function mergeMarkup(merge, user, online) {
       `<div class="account-choice-list"><button type="button" class="primary" data-account-action="confirm-merge"${!online ? " disabled" : ""}>Merge accounts</button>` +
       `<button type="button" class="subtle-btn" data-account-action="cancel-merge">Cancel</button></div></section>`;
   }
+  if (merge.step === "restore") {
+    const pending = merge.pending;
+    const rows = ["facebook", "google"].map((provider) => {
+      const label = provider === "google" ? "Google" : "Facebook";
+      const connected = !!methods?.[provider];
+      return `<div class="account-method"><div class="account-method-identity">${providerIcon(provider)}<span><strong>${label}</strong><span class="account-method-status${connected ? " is-connected" : ""}">${connected ? "✓ Connected" : pending.providers.includes(provider) ? "○ Connect" : "Not connected"}</span></span></div>` +
+        (pending.providers.includes(provider) ? `<button type="button" class="outline-btn" data-account-link="${provider}"${!online ? " disabled" : ""}>Connect ${label}</button><button type="button" class="subtle-btn" data-restore-skip="${provider}">Skip for now</button>` : "") + `</div>`;
+    }).join("");
+    const differentEmail = pending.email && user.email && pending.email.toLowerCase() !== user.email.toLowerCase();
+    const emailForm = !user.email ?
+      `<p>${pending.emailConfirmationPending ? "Email confirmation pending. Check your inbox, then return to Account after verifying the address." : "Add an email address and confirm it before setting a new password."}</p>` +
+      `<form id="account-merge-email-setup"><label class="form-group"><span>Email address</span><input name="email" type="email" value="${escapeHtml(pending.email || "")}" required></label><button class="primary" type="submit"${!online ? " disabled" : ""}>${pending.emailConfirmationPending ? "Resend email change" : "Add email"}</button></form>` :
+      !user.emailVerified ? `<p>Email confirmation pending for ${escapeHtml(user.email)}. Verify this address before setting a password.</p>` :
+      `<form id="account-merge-password"><label class="form-group"><span>New password</span><input name="password" type="password" minlength="8" autocomplete="new-password" required></label><button class="primary" type="submit"${!online ? " disabled" : ""}>Set up email sign-in</button></form>`;
+    const emailRow = pending.emailRequired ? `<div class="account-method"><div class="account-method-identity">${providerIcon("email")}<span><strong>Email/password</strong><span class="account-method-status">○ Set up</span></span></div></div>` +
+      `<p>Your accounts are merged. Set a new password to continue using ${escapeHtml(user.email || "an email address")} to sign in. Your previous password does not carry over.</p>` +
+      (differentEmail ? `<p class="account-note">The other account used ${escapeHtml(pending.email)}. Your primary email stays ${escapeHtml(user.email)}; the other email cannot be retained automatically.</p>` : "") +
+      emailForm +
+      `<button type="button" class="subtle-btn" data-restore-skip="email">Skip for now</button>` : "";
+    return `<section class="account-panel account-merge"><span class="eyebrow">DATA MERGED</span><p>✓ Cloud progress combined</p><h3>SIGN-IN METHODS</h3><p>Your progress is merged. One final step: reconnect missing sign-in methods to your RiffTree account.</p><div class="account-method-list">${rows}${emailRow}</div>` +
+      `<p class="account-note">Your progress is safe. You can reconnect Google or Facebook later from Account → Sign-in methods.</p></section>`;
+  }
   if (merge.step === "done") {
-    const links = (merge.result?.providersToLink || []).filter((provider) => ["google", "facebook"].includes(provider)).map((provider) =>
-      `<button type="button" class="outline-btn" data-account-link="${provider}">${providerIcon(provider)}Connect ${provider === "google" ? "Google" : "Facebook"}</button>`).join("");
-    const duplicates = merge.result?.duplicateProviders?.length
-      ? `<p>The primary account's existing ${merge.result.duplicateProviders.map(escapeHtml).join(" and ")} sign-in remains; another identity from that provider cannot be retained.</p>` : "";
-    return `<section class="account-panel account-merge"><h3>Accounts merged</h3><p>Cloud account data is now under the account you kept. Local device data has not changed.</p>${duplicates}${links}` +
+    return `<section class="account-panel account-merge"><span class="eyebrow">ACCOUNTS MERGED</span><h3>Your RiffTree account is ready.</h3><p>Cloud progress is combined. Local device data has not changed.</p>` +
       `<button type="button" class="subtle-btn" data-account-action="cancel-merge">Done</button></section>`;
   }
   return `<section class="account-panel account-merge"><span class="eyebrow">MERGE ACCOUNTS</span><h3>You are keeping ${identity}</h3>` +
@@ -91,7 +111,7 @@ export function accountMarkup({
         ? '<p class="account-note">Check your inbox to verify your email address.</p>' : '') +
       '<button class="outline-btn" type="button" data-account-action="sign-out">Sign out</button></section>';
     body += signInMethodsMarkup(methods, methodsError, online);
-    if (view === "merge") body += mergeMarkup(merge || { step: "sign-in" }, user, online);
+    if (view === "merge") body += mergeMarkup(merge || { step: "sign-in" }, user, online, methods);
     else body += '<section class="account-panel account-merge"><h3>Merge another account</h3>' +
       '<p>Combine cloud progress from another RiffTree account with this one. This account will be kept.</p>' +
       '<button class="outline-btn" type="button" data-account-action="start-merge"' +
@@ -153,6 +173,7 @@ export function createAccountUI({
   dialog = document.querySelector("#account-dialog"),
   openButton = document.querySelector("#account-open"),
   isOnline = () => navigator.onLine !== false,
+  restorationStore = createMergeRestorationStore(),
 }) {
   let message = "";
   let view = "sign-in";
@@ -166,6 +187,11 @@ export function createAccountUI({
   let methodsRequest = 0;
   let busy = false;
   let merge = { step: "sign-in" };
+  function resumeRestoration() {
+    const userId = auth.getSession().user?.id;
+    const pending = restorationStore.read(userId);
+    if (pending) { view = "merge"; merge = { step: "restore", primaryId: userId, pending }; }
+  }
   const content = dialog.querySelector("#account-content");
 
   function render() {
@@ -210,6 +236,12 @@ export function createAccountUI({
       const found = await auth.getSignInMethods();
       if (request !== methodsRequest || auth.getSession().user?.id !== id) return;
       methods = found;
+      if (merge.step === "restore" && merge.primaryId === id) {
+        for (const provider of merge.pending.providers) {
+          if (found[provider]) merge.pending = restorationStore.finish(id, provider);
+        }
+        if (!merge.pending) merge = { step: "done", primaryId: id };
+      }
     } catch {
       if (request !== methodsRequest || auth.getSession().user?.id !== id) return;
       methodsError = "unavailable";
@@ -218,12 +250,13 @@ export function createAccountUI({
     return methods;
   }
   function open() {
+    resumeRestoration();
     if (!dialog.open) dialog.showModal();
     render();
     if (auth.getSession().user) void refreshMethods();
   }
   function close() {
-    if (view === "merge" && merge.step !== "done") void mergeService?.clear();
+    if (view === "merge" && !["done", "restore"].includes(merge.step)) void mergeService?.clear();
     view = "sign-in";
     merge = { step: "sign-in" };
     if (dialog.open) dialog.close();
@@ -275,6 +308,12 @@ export function createAccountUI({
           ? `${unlinkProvider === "google" ? "Google" : "Facebook"} disconnected from this account.`
           : "Refresh sign-in methods to confirm the change.";
       });
+      const skipMethod = button.dataset.restoreSkip;
+      if (skipMethod) return void run(async () => {
+        merge.pending = restorationStore.finish(auth.getSession().user?.id, skipMethod);
+        if (!merge.pending) merge = { step: "done", primaryId: auth.getSession().user?.id };
+        message = "Your progress is safe. You can reconnect Google or Facebook later from Account → Sign-in methods.";
+      });
       const choice = button.dataset.migration;
       if (choice) {
         const id = auth.getSession().user?.id;
@@ -297,7 +336,8 @@ export function createAccountUI({
           if (auth.getSession().user?.id !== merge.primaryId)
             throw new Error("The account you kept changed. Start again.");
           const result = await mergeService.merge();
-          merge = { step: "done", result };
+          const pending = restorationStore.write(merge.primaryId, result);
+          merge = pending ? { step: "restore", primaryId: merge.primaryId, pending } : { step: "done", result };
           await refreshMethods();
         }); break;
         case "retry-methods": void refreshMethods(); break;
@@ -338,9 +378,26 @@ export function createAccountUI({
           await auth.updatePassword(password);
           message = "Password updated.";
         });
+      } else if (form.id === "account-merge-password") {
+        const password = form.elements.password.value;
+        void run(async () => {
+          await auth.updatePassword(password);
+          merge.pending = restorationStore.finish(auth.getSession().user?.id, "email");
+          if (!merge.pending) merge = { step: "done", primaryId: auth.getSession().user?.id };
+          await refreshMethods();
+          message = "A new password is set for your primary email.";
+        });
+      } else if (form.id === "account-merge-email-setup") {
+        const email = form.elements.email.value;
+        void run(async () => {
+          await auth.requestEmailChange(email);
+          merge.pending = restorationStore.emailConfirmation(auth.getSession().user?.id, email);
+          message = "Email confirmation pending. Check your inbox before setting a new password.";
+        });
       }
     });
     auth.subscribe((state, event) => {
+      if (state.user && ["SIGNED_IN", "INITIAL_SESSION", "USER_UPDATED"].includes(event) && view !== "merge") resumeRestoration();
       if (view === "merge" && merge.primaryId && state.user?.id !== merge.primaryId) {
         void mergeService?.clear();
         view = "sign-in";

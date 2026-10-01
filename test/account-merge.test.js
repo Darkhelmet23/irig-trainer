@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createMergeHandler, maskEmail, providersOf } from "../supabase/functions/merge-accounts/merge-core.js";
 import { createMergeService, isExpectedMergeMessage, loadMergeClient } from "../public/auth/merge-client.js";
+import { createMergeRestorationStore, MERGE_RESTORATION_KEY } from "../public/auth/merge-restoration.js";
 
 const users = {
   primary: { id: "primary", email: "main@example.com", identities: [{ provider: "email" }, { provider: "google" }] },
@@ -69,6 +70,65 @@ test("successful merge copies data before deleting secondary Auth user; cleanup 
   const response = await failed.handler(failed.request("merge"));
   assert.equal(response.status, 503);
   assert.equal((await response.json()).status, "data_merged_auth_cleanup_pending");
+});
+test("secondary provider and email methods are captured before Auth deletion", async () => {
+  const original = users.secondary;
+  users.secondary = { id: "secondary", email: "other@example.com", identities: [
+    { provider: "google" }, { provider: "facebook" }, { provider: "email" }] };
+  try {
+    const { handler, request, calls } = fixture();
+    const body = await (await handler(request("merge"))).json();
+    assert.deepEqual(body.providersToLink, ["facebook"]);
+    assert.deepEqual(body.duplicateProviders, ["google"]);
+    assert.equal(body.emailSetupRequired, false);
+    assert.equal(body.secondaryEmail, "other@example.com");
+    assert.ok(calls.findIndex((entry) => entry[0] === "getUser") <
+      calls.findIndex((entry) => entry[0] === "deleteUser"));
+  } finally { users.secondary = original; }
+});
+test("OAuth primary receives new-password setup without changing its email", async () => {
+  const oldPrimary = users.primary, oldSecondary = users.secondary;
+  users.primary = { id: "primary", email: "main@example.com", identities: [{ provider: "facebook" }] };
+  users.secondary = { id: "secondary", email: "other@example.com", identities: [
+    { provider: "google" }, { provider: "email" }] };
+  try {
+    const { handler, request } = fixture();
+    const body = await (await handler(request("merge"))).json();
+    assert.deepEqual(body.providersToLink, ["google"]);
+    assert.equal(body.emailSetupRequired, true);
+    assert.equal(body.secondaryEmail, "other@example.com");
+    assert.equal(users.primary.email, "main@example.com");
+  } finally { users.primary = oldPrimary; users.secondary = oldSecondary; }
+});
+test("both missing OAuth providers remain pending after a successful merge", async () => {
+  const oldPrimary = users.primary, oldSecondary = users.secondary;
+  users.primary = { id: "primary", email: "main@example.com", identities: [{ provider: "email" }] };
+  users.secondary = { id: "secondary", email: "other@example.com", identities: [
+    { provider: "google" }, { provider: "facebook" }] };
+  try {
+    const { handler, request } = fixture();
+    const body = await (await handler(request("merge"))).json();
+    assert.deepEqual(body.providersToLink, ["google", "facebook"]);
+  } finally { users.primary = oldPrimary; users.secondary = oldSecondary; }
+});
+test("pending restoration survives reload, scopes to primary and stores no credentials", () => {
+  const values = new Map();
+  const storage = { getItem: (key) => values.get(key) || null,
+    setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
+  const store = createMergeRestorationStore(storage);
+  store.write("primary", { status: "merged", providersToLink: ["google", "facebook"],
+    emailSetupRequired: true, secondaryEmail: "other@example.com", accessToken: "SECRET", password: "SECRET" });
+  assert.equal(store.read("other"), null);
+  assert.deepEqual(createMergeRestorationStore(storage).read("primary").providers, ["google", "facebook"]);
+  assert.equal(values.get(MERGE_RESTORATION_KEY).includes("SECRET"), false);
+  store.emailConfirmation("primary", "other@example.com");
+  assert.equal(store.read("primary").emailConfirmationPending, true);
+  store.finish("primary", "google");
+  assert.deepEqual(store.read("primary").providers, ["facebook"]);
+  store.finish("primary", "facebook");
+  assert.equal(store.read("primary").emailRequired, true);
+  store.finish("primary", "email");
+  assert.equal(values.has(MERGE_RESTORATION_KEY), false);
 });
 test("provider and email summary is sanitized", () => {
   assert.deepEqual(providersOf({ identities: [{ provider: "google" }, { provider: "apple" }, null, { provider: "google" }] }), ["google"]);
