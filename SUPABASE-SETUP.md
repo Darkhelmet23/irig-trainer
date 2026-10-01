@@ -20,19 +20,21 @@ The local server exposes only the public URL/key at `/api/auth-config` and sends
 
 Provider buttons are wired through `public/auth/auth-service.js`, but real OAuth login cannot work until those external dashboards are configured. Use HTTPS for deployed origins. Browser auth uses Supabase PKCE/session persistence; never log tokens or authorization codes.
 
-## Proposed private tables for a later sync phase
+## Repository schema for a later sync phase
 
-The following is a design, not a migration that this version applies. Use `auth.users(id)` as the owner; Auth stores passwords. Keep local record IDs stable for idempotent future sync, store timestamps/revisions for conflict handling, and enforce sensible size limits. Suggested columns:
+The root `supabase/` directory is the CLI project. For the Supabase GitHub integration, enter `.` as the working directory when this repository is selected. The initial migration in `supabase/migrations/` defines five private tables and their ownership policies. It does not make the browser app upload data; local progress and recordings remain on the device. Review the GitHub integration's deployment settings before pushing migrations, because an enabled deployment can apply them to the linked database.
+
+The migration uses `auth.users(id)` as the owner; Auth stores passwords. Practice-session and Song Studio project IDs are scoped by `(user_id, id)`, so existing local IDs can later be reused safely for each account. `revision` and `updated_at` are present for future conflict handling; no sync protocol is implemented yet.
 
 | Table | Suggested columns |
 | --- | --- |
 | `profiles` | `user_id` primary key, `display_name`, `created_at`, `updated_at` |
-| `skill_progress` | `id` primary key, `user_id`, `skill_id`, `xp`, `updated_at`; unique `(user_id, skill_id)` |
-| `practice_sessions` | `id` primary key, `user_id`, `lesson_id`, `accuracy`, `bpm`, `speed`, `created_at` |
+| `skill_progress` | `(user_id, skill_id)` primary key, `xp`, `revision`, `updated_at` |
+| `practice_sessions` | `(user_id, id)` primary key, `lesson_id`, `accuracy`, `bpm`, `speed`, `created_at` |
 | `user_settings` | `user_id` primary key, `settings_json`, `updated_at` |
-| `song_projects` | `id` primary key, `user_id`, `project_json`, `updated_at` |
+| `song_projects` | `(user_id, id)` primary key, `project_json`, `revision`, `updated_at` |
 
-Enable Row Level Security on **each** private table. Create separate SELECT, INSERT, UPDATE, and DELETE policies scoped to `auth.uid() = user_id`, with `WITH CHECK (auth.uid() = user_id)` for INSERT and UPDATE. For example:
+The migration enables Row Level Security on **each** private table and creates separate SELECT, INSERT, UPDATE, and DELETE policies scoped to `auth.uid() = user_id`, with `WITH CHECK (auth.uid() = user_id)` for INSERT and UPDATE. For example:
 
 ```sql
 alter table public.song_projects enable row level security;
@@ -47,7 +49,7 @@ create policy "delete own songs" on public.song_projects
   for delete to authenticated using ((select auth.uid()) = user_id);
 ```
 
-Repeat the ownership rule for the other four tables; test cross-user reads/writes before shipping sync. The public client key does **not** replace RLS. A future sync layer should require an explicit migration decision, upload only after a verified authenticated session, support conflicts and offline retries, and keep the local copy until confirmed. `pending-sync` currently means only that the player asked to be considered for that future flow.
+The migration applies that ownership rule to all five tables, grants access only to authenticated users, and adds indexes for owner-scoped history/project queries. Test cross-user reads/writes before shipping sync. The public client key does **not** replace RLS. A future sync layer should require an explicit migration decision, upload only after a verified authenticated session, support conflicts and offline retries, and keep the local copy until confirmed. `pending-sync` currently means only that the player asked to be considered for that future flow.
 
 Do not store audio blobs in Postgres. Optional recording backup can later use Supabase Storage with private buckets, ownership policies, quotas, and an explicit opt-in. This release keeps recordings local only.
 

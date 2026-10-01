@@ -1,0 +1,1 @@
+-- No seed data. Auth users and practice data are created by the application.
