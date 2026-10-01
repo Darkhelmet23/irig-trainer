@@ -32,6 +32,7 @@
 .account-method-status.is-connected{color:var(--success)}
 .account-method button{flex:none}
 .account-method button:disabled{opacity:.5;cursor:not-allowed}
+.account-merge>p{color:var(--muted);line-height:1.5}.account-merge h3:not(:first-child){margin-top:18px}.account-merge .account-provider-list{margin:16px 0}.account-merge .account-choice-list{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.account-merge>span:not(.eyebrow){display:block;color:var(--muted);font-size:var(--text-sm);margin-bottom:12px}.merge-popup{max-width:520px;margin:12vh auto;padding:28px;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg)}
 .account-migration p{margin-bottom:14px}
 #account-dialog .close-btn{flex:none}
 @media(max-width:720px){.account-entry{max-width:130px;font-size:11px;padding:7px 9px}.account-shell{padding:18px}.account-method{align-items:flex-start;flex-direction:column}.account-method button{width:100%}}

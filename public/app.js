@@ -82,6 +82,7 @@ import { renderArenaPage, renderModeBanner } from "./arena-page.js";
 import { createTunerUI } from "./tuner-ui.js";
 import { createAuthService } from "./auth/auth-service.js";
 import { createAccountUI } from "./auth/account-ui.js";
+import { createMergeService } from "./auth/merge-client.js";
 import { detectLocalProgress } from "./data/migration.js";
 const $ = (s) => document.querySelector(s),
   esc = (s) =>
@@ -237,6 +238,7 @@ const songStudioStorage = createSongStudioStorage();
 const auth = createAuthService();
 const accountUI = createAccountUI({
   auth,
+  mergeService: createMergeService({ auth }),
   migrationRepository,
   detectProgress: () => detectLocalProgress({
     profileStore,

@@ -248,6 +248,14 @@ export function createAuthService({
     }
     applySession(null, "SIGNED_OUT");
   }
+  async function getAccessToken() {
+    const sdk = await authenticatedClient();
+    const expectedId = account.user.id;
+    const { data, error } = await sdk.auth.getSession();
+    if (error || !data?.session?.access_token || data.session.user?.id !== expectedId)
+      throw new Error("Your account session changed. Sign in again before merging.");
+    return data.session.access_token;
+  }
   return {
     initialize,
     subscribe(listener) {
@@ -256,6 +264,7 @@ export function createAuthService({
       return () => listeners.delete(listener);
     },
     getSession: snapshot,
+    getAccessToken,
     signInWithProvider,
     signInWithGoogle: () => signInWithProvider("google"),
     signInWithFacebook: () => signInWithProvider("facebook"),

@@ -142,3 +142,84 @@ test('identity conflict returned after OAuth redirects is shown without raw prov
   await expect(page.locator('#account-message')).toHaveText('That sign-in account is already connected to another iRig Trainer account.');
   await expect(page.locator('#account-message')).not.toContainText('<script>');
 });
+
+test('merge requires preview and confirmation while keeping primary sign-in and local progress',async({page})=>{
+  const calls=[];
+  await page.addInitScript(()=>localStorage.setItem('irig-demo',JSON.stringify({version:1,xp:155,sessions:2,history:[]})));
+  await page.route('**/api/auth-config',route=>route.fulfill({json:{configured:true,url:'https://example.supabase.co',anonKey:'sb_publishable_'+'a'.repeat(24)}}));
+  await page.route('**/vendor/supabase-sdk.js',route=>route.fulfill({contentType:'text/javascript',body:`
+    export function createClient(_url,_key,options){
+      const merge=options.auth.storageKey==='irig-merge-auth';
+      let listener,session=null;
+      const user={id:'main-user',email:'main@example.com',user_metadata:{display_name:'Player'},app_metadata:{providers:['email']},identities:[{provider:'email'}]};
+      return {auth:{
+        onAuthStateChange(fn){listener=fn;return {data:{subscription:{unsubscribe(){}}}}},
+        async getSession(){return {data:{session},error:null}},
+        async signInWithPassword(){session=merge?{user:{id:'other-user'},access_token:'secondary-token'}:{user,access_token:'primary-token'};
+          if(!merge)listener('SIGNED_IN',session);return {data:{session},error:null}},
+        async getUserIdentities(){return {data:{identities:[{provider:'email'}]},error:null}},
+        async signOut(){session=null;return {error:null}}
+      }};
+    }` }));
+  await page.route('**/functions/v1/merge-accounts',route=>{
+    const body=route.request().postDataJSON();calls.push(body.operation);
+    route.fulfill({json:body.operation==='preview'?{
+      primary:{email:'m***@example.com',providers:['email'],skills:2,sessions:3,projects:1},
+      secondary:{email:'o***@example.com',providers:['facebook'],skills:4,sessions:5,projects:2},
+      providersToLink:['facebook'],duplicateProviders:[]
+    }:{status:'merged',providersToLink:['facebook'],duplicateProviders:[]}});
+  });
+  await page.goto('/');await page.locator('#account-open').click();
+  await page.locator('#account-email [name=email]').fill('main@example.com');
+  await page.locator('#account-email [name=password]').fill('longpassword');
+  await page.locator('#account-email button[value="sign-in"]').click();
+  await page.getByRole('button',{name:'Merge another account'}).click();
+  await expect(page.locator('.account-merge')).toContainText('You are keeping');
+  await page.locator('#account-merge-email [name=email]').fill('other@example.com');
+  await page.locator('#account-merge-email [name=password]').fill('longpassword');
+  await page.locator('#account-merge-email button[type=submit]').click();
+  await expect(page.locator('.account-merge')).toContainText('REVIEW MERGE');
+  expect(calls).toEqual(['preview']);
+  await expect(page.locator('.account-merge')).toContainText('4 skills');
+  await page.getByRole('button',{name:'Merge accounts',exact:true}).click();
+  await expect(page.locator('.account-merge')).toContainText('Accounts merged');
+  expect(calls).toEqual(['preview','merge']);
+  await expect(page.locator('#account-status')).toHaveText('Player');
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('irig-demo')).xp)).toBe(155);
+});
+
+test('secondary Facebook popup returns through isolated PKCE callback without replacing primary',async({page,context})=>{
+  await context.route('**/api/auth-config',route=>route.fulfill({json:{configured:true,url:'https://example.supabase.co',anonKey:'sb_publishable_'+'a'.repeat(24)}}));
+  await context.route('**/vendor/supabase-sdk.js',route=>route.fulfill({contentType:'text/javascript',body:`
+    export function createClient(_url,_key,options){
+      const merge=options.auth.storageKey==='irig-merge-auth';
+      let listener,session=null;
+      const main={id:'main-user',email:'main@example.com',user_metadata:{display_name:'Main'},app_metadata:{providers:['email']},identities:[{provider:'email'}]};
+      return {auth:{
+        onAuthStateChange(fn){listener=fn;return {data:{subscription:{unsubscribe(){}}}}},
+        async getSession(){if(merge&&location.search.includes('code=mock'))session={user:{id:'other-user'},access_token:'secondary-token-with-enough-length'};
+          return {data:{session},error:null}},
+        async signInWithPassword(){session={user:main,access_token:'primary-token'};listener('SIGNED_IN',session);return {data:{session},error:null}},
+        async getUserIdentities(){return {data:{identities:[{provider:'email'}]},error:null}},
+        async signInWithOAuth({provider,options}){if(!merge||provider!=='facebook'||options)throw Error('wrong popup flow');
+          location.href='/?code=mock';return {error:null}},
+        async signOut(){session=null;return {error:null}}
+      }};
+    }` }));
+  await context.route('**/functions/v1/merge-accounts',route=>route.fulfill({json:{
+    primary:{email:'m***@example.com',providers:['email'],skills:0,sessions:0,projects:0},
+    secondary:{email:'o***@example.com',providers:['facebook'],skills:0,sessions:0,projects:0},
+    providersToLink:['facebook'],duplicateProviders:[]
+  }}));
+  await page.goto('/');await page.locator('#account-open').click();
+  await page.locator('#account-email [name=email]').fill('main@example.com');
+  await page.locator('#account-email [name=password]').fill('longpassword');
+  await page.locator('#account-email button[value="sign-in"]').click();
+  await page.getByRole('button',{name:'Merge another account'}).click();
+  const popupPromise=page.waitForEvent('popup');
+  await page.getByRole('button',{name:'Other account: Facebook'}).click();
+  const popup=await popupPromise;
+  await expect(page.locator('.account-merge')).toContainText('REVIEW MERGE');
+  await expect(page.locator('#account-status')).toHaveText('Main');
+  await expect.poll(()=>popup.isClosed()).toBe(true);
+});

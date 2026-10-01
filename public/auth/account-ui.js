@@ -21,6 +21,37 @@ function signInMethodsMarkup(methods, methodsError, online) {
     '</section>';
 }
 
+function mergeMarkup(merge, user, online) {
+  const identity = `<strong>${escapeHtml(user.email || user.displayName)}</strong>`;
+  if (merge.step === "preview") {
+    const data = merge.preview;
+    const summary = (entry) => `<span>${Number(entry.skills) || 0} skills · ${Number(entry.sessions) || 0} practice sessions · ${Number(entry.projects) || 0} Song Studio projects</span>`;
+    return `<section class="account-panel account-merge"><span class="eyebrow">REVIEW MERGE</span><h3>Keep this account</h3>` +
+      `<p>${escapeHtml(data.primary.email)} · ${data.primary.providers.map(escapeHtml).join(", ") || "email"}</p>${summary(data.primary)}` +
+      `<h3>Merge from the other account</h3><p>${escapeHtml(data.secondary.email)} · ${data.secondary.providers.map(escapeHtml).join(", ") || "email"}</p>${summary(data.secondary)}` +
+      `<p>Your highest XP in each skill will be kept. Practice history and projects from both cloud accounts will be preserved. The other iRig Trainer account will be removed.</p>` +
+      `<p class="account-note">Primary settings, profile, and email/password stay. Other OAuth methods must be connected again. Local device progress remains local until cloud sync exists.</p>` +
+      `<div class="account-choice-list"><button type="button" class="primary" data-account-action="confirm-merge"${!online ? " disabled" : ""}>Merge accounts</button>` +
+      `<button type="button" class="subtle-btn" data-account-action="cancel-merge">Cancel</button></div></section>`;
+  }
+  if (merge.step === "done") {
+    const links = (merge.result?.providersToLink || []).map((provider) =>
+      `<button type="button" class="outline-btn" data-account-link="${provider}">Connect ${provider === "google" ? "Google" : "Facebook"}</button>`).join("");
+    const duplicates = merge.result?.duplicateProviders?.length
+      ? `<p>The primary account's existing ${merge.result.duplicateProviders.map(escapeHtml).join(" and ")} sign-in remains; another identity from that provider cannot be retained.</p>` : "";
+    return `<section class="account-panel account-merge"><h3>Accounts merged</h3><p>Cloud account data is now under the account you kept. Local device data has not changed.</p>${duplicates}${links}` +
+      `<button type="button" class="subtle-btn" data-account-action="cancel-merge">Done</button></section>`;
+  }
+  return `<section class="account-panel account-merge"><span class="eyebrow">MERGE ACCOUNTS</span><h3>You are keeping ${identity}</h3>` +
+    `<p>Sign in to the other existing account. This keeps your current sign-in active. No data changes until you review and confirm.</p>` +
+    `<div class="account-provider-list"><button type="button" class="outline-btn" data-merge-provider="google"${!online ? " disabled" : ""}>Other account: Google</button>` +
+    `<button type="button" class="outline-btn" data-merge-provider="facebook"${!online ? " disabled" : ""}>Other account: Facebook</button></div>` +
+    `<form id="account-merge-email"><label class="form-group"><span>Other account email</span><input name="email" type="email" autocomplete="off" required></label>` +
+    `<label class="form-group"><span>Password</span><input name="password" type="password" autocomplete="off" required></label>` +
+    `<button class="primary" type="submit"${!online ? " disabled" : ""}>Preview merge</button></form>` +
+    `<button type="button" class="subtle-btn" data-account-action="cancel-merge">Cancel</button></section>`;
+}
+
 export function accountMarkup({
   state,
   message = "",
@@ -31,6 +62,7 @@ export function accountMarkup({
   methods = null,
   methodsError = "",
   online = true,
+  merge = null,
 }) {
   const user = state.user;
   const unavailable = !online || state.availability === "offline"
@@ -56,6 +88,11 @@ export function accountMarkup({
         ? '<p class="account-note">Check your inbox to verify your email address.</p>' : '') +
       '<button class="outline-btn" type="button" data-account-action="sign-out">Sign out</button></section>';
     body += signInMethodsMarkup(methods, methodsError, online);
+    if (view === "merge") body += mergeMarkup(merge || { step: "sign-in" }, user, online);
+    else body += '<section class="account-panel account-merge"><h3>Merge another account</h3>' +
+      '<p>Combine cloud progress from another iRig Trainer account with this one. This account will be kept.</p>' +
+      '<button class="outline-btn" type="button" data-account-action="start-merge"' +
+      (!online ? ' disabled' : '') + '>Merge another account</button></section>';
     if (migration?.found) {
       if (!decision || showMigrationChoices) {
         body += '<section class="account-panel account-migration"><span class="eyebrow">LOCAL PROGRESS</span>' +
@@ -107,6 +144,7 @@ export function accountMarkup({
 
 export function createAccountUI({
   auth,
+  mergeService,
   migrationRepository,
   detectProgress,
   dialog = document.querySelector("#account-dialog"),
@@ -124,6 +162,7 @@ export function createAccountUI({
   let methodsFor = null;
   let methodsRequest = 0;
   let busy = false;
+  let merge = { step: "sign-in" };
   const content = dialog.querySelector("#account-content");
 
   function render() {
@@ -136,6 +175,7 @@ export function createAccountUI({
       state, message, view, migration, decision, showMigrationChoices,
       methods: state.user?.id === methodsFor ? methods : null, methodsError,
       online: isOnline(),
+      merge,
     });
   }
   async function refreshMigration() {
@@ -180,6 +220,9 @@ export function createAccountUI({
     if (auth.getSession().user) void refreshMethods();
   }
   function close() {
+    if (view === "merge" && merge.step !== "done") void mergeService?.clear();
+    view = "sign-in";
+    merge = { step: "sign-in" };
     if (dialog.open) dialog.close();
     openButton.focus();
   }
@@ -191,6 +234,8 @@ export function createAccountUI({
       await action();
     } catch (error) {
       message = error?.message || "Account action could not finish. Try again.";
+      if (view === "merge" && merge.step === "preview")
+        merge = { step: "sign-in", primaryId: auth.getSession().user?.id };
     } finally {
       busy = false;
       render();
@@ -204,6 +249,13 @@ export function createAccountUI({
       if (!button) return;
       const provider = button.dataset.provider;
       if (provider) return void run(() => auth.signInWithProvider(provider));
+      const mergeProvider = button.dataset.mergeProvider;
+      if (mergeProvider) return void run(async () => {
+        const primaryId = merge.primaryId;
+        await mergeService.signInWithProvider(mergeProvider);
+        if (auth.getSession().user?.id !== primaryId) throw new Error("The account you kept changed. Start again.");
+        merge = { step: "preview", primaryId, preview: await mergeService.preview() };
+      });
       const linkProvider = button.dataset.accountLink;
       if (linkProvider) return void run(async () => {
         await auth.linkIdentity(linkProvider);
@@ -236,6 +288,15 @@ export function createAccountUI({
         case "forgot": view = "forgot"; message = ""; render(); break;
         case "back": view = "sign-in"; message = ""; render(); break;
         case "sign-out": void run(() => auth.signOut()); break;
+        case "start-merge": view = "merge"; merge = { step: "sign-in", primaryId: auth.getSession().user?.id }; render(); break;
+        case "cancel-merge": void mergeService?.clear(); view = "sign-in"; merge = { step: "sign-in" }; message = ""; render(); break;
+        case "confirm-merge": void run(async () => {
+          if (auth.getSession().user?.id !== merge.primaryId)
+            throw new Error("The account you kept changed. Start again.");
+          const result = await mergeService.merge();
+          merge = { step: "done", result };
+          await refreshMethods();
+        }); break;
         case "retry-methods": void refreshMethods(); break;
         case "review-migration": showMigrationChoices = true; render(); break;
       }
@@ -255,6 +316,13 @@ export function createAccountUI({
               : "Account created.";
           });
         else void run(() => auth.signInWithEmail(email, password));
+      } else if (form.id === "account-merge-email") {
+        void run(async () => {
+          const primaryId = merge.primaryId;
+          await mergeService.signInWithEmail(form.elements.email.value, form.elements.password.value);
+          if (auth.getSession().user?.id !== primaryId) throw new Error("The account you kept changed. Start again.");
+          merge = { step: "preview", primaryId, preview: await mergeService.preview() };
+        });
       } else if (form.id === "account-forgot") {
         const email = form.elements.email.value;
         void run(async () => {
@@ -270,12 +338,18 @@ export function createAccountUI({
       }
     });
     auth.subscribe((state, event) => {
+      if (view === "merge" && merge.primaryId && state.user?.id !== merge.primaryId) {
+        void mergeService?.clear();
+        view = "sign-in";
+        merge = { step: "sign-in" };
+      }
       if (event === "SIGNED_IN" || event === "INITIAL_SESSION" ||
           (state.user && state.user.id !== migrationFor))
         void refreshMigration();
       else if (event === "SIGNED_OUT") void refreshMigration();
       if (["SIGNED_IN", "INITIAL_SESSION", "SIGNED_OUT", "USER_UPDATED"].includes(event))
         void refreshMethods();
+      if (event === "SIGNED_OUT") { void mergeService?.clear(); view = "sign-in"; merge = { step: "sign-in" }; }
       if (state.callbackError && ["INITIAL_SESSION", "UNAVAILABLE"].includes(event)) {
         message = state.callbackError;
         open();
