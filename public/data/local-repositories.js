@@ -2,12 +2,18 @@ import { createStorage } from "../storage.js";
 
 // These methods keep the existing keys and record formats. Cloud sync can later
 // read snapshots through the repositories without changing local ownership.
-export function createSettingsRepository({ storage = createStorage() } = {}) {
+export function createSettingsRepository({ storage = createStorage(), onPracticeSave = () => {} } = {}) {
+  let accountId = null;
+  const practiceKey = () => accountId ? `irig-cloud-practice-settings-v1:${accountId}` : "irig-practice-settings";
   return {
     loadDevice: () => storage.read("irig-settings", {}),
     saveDevice: (value) => storage.save("irig-settings", value),
-    loadPractice: () => storage.read("irig-practice-settings", {}),
-    savePractice: (value) => storage.save("irig-practice-settings", value),
+    loadPractice: () => storage.read(practiceKey(), {}),
+    loadGuestPractice: () => storage.read("irig-practice-settings", {}),
+    savePractice(value) { storage.save(practiceKey(), value); onPracticeSave(accountId, value); },
+    replacePractice(value) { storage.save(practiceKey(), value); },
+    adoptGuestPractice() { if (accountId) storage.save(practiceKey(), storage.read("irig-practice-settings", {})); },
+    setAccount(id) { accountId = typeof id === "string" && id ? id : null; },
     loadOnboarding: () => storage.read("irig-onboarding-v1", null),
     saveOnboarding: (value) => storage.save("irig-onboarding-v1", value),
   };

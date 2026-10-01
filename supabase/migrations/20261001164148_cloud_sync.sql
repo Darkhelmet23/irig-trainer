@@ -1,0 +1,1 @@
+-- No-op migration entry created during linked-project schema inspection. The schema is applied in 20261001164217_cloud_sync_schema.sql.

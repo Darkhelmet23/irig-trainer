@@ -84,6 +84,7 @@ import { createAuthService } from "./auth/auth-service.js";
 import { createAccountUI } from "./auth/account-ui.js";
 import { createMergeService } from "./auth/merge-client.js";
 import { detectLocalProgress } from "./data/migration.js";
+import { createCloudSync } from "./data/cloud-sync.js";
 const $ = (s) => document.querySelector(s),
   esc = (s) =>
     String(s).replace(
@@ -102,10 +103,14 @@ const localStorageAdapter = createStorage({
     toast("Storage is unavailable. Progress will last only for this visit."),
 });
 const { read, save } = localStorageAdapter;
-const settingsRepository = createSettingsRepository({ storage: localStorageAdapter });
+let cloudSync = null;
+let renderedAccountScope = null;
+const settingsRepository = createSettingsRepository({ storage: localStorageAdapter,
+  onPracticeSave: (id) => cloudSync?.queueSettings(id) });
 const practiceRepository = createPracticeRepository({ storage: localStorageAdapter });
 const migrationRepository = createMigrationRepository({ storage: localStorageAdapter });
-const profileStore = createProfileStore({ read, save, sanitizeProfile });
+const profileStore = createProfileStore({ read, save, sanitizeProfile,
+  onPersist: (id, value) => cloudSync?.queueProfile(id, value) });
 let mode = profileStore.mode,
   profile = profileStore.profile;
 let onboardingStep = onboardingStepFor(
@@ -133,7 +138,7 @@ const settings = {
   ...settingsRepository.loadDevice(),
 };
 const inputDiagnostics = new InputDiagnostics(settings.offset);
-const practicePrefs = {
+const defaultPracticePrefs = {
   countInBars: 1,
   songCountInBars: 2,
   metronome: false,
@@ -141,6 +146,9 @@ const practicePrefs = {
   accent: true,
   record: false,
   accuracyMode: "both",
+};
+const practicePrefs = {
+  ...defaultPracticePrefs,
   ...settingsRepository.loadPractice(),
 };
 let latencyCalibration = null,
@@ -234,12 +242,17 @@ const tunerUI = createTunerUI({
   toast,
 });
 
-const songStudioStorage = createSongStudioStorage();
+const songStudioStorage = createSongStudioStorage({
+  onProjectSave: (id, item) => cloudSync?.queueProject(id, item),
+});
 const auth = createAuthService();
 const accountUI = createAccountUI({
   auth,
   mergeService: createMergeService({ auth }),
   migrationRepository,
+  getSyncStatus: () => cloudSync?.status || "local",
+  onMigrationChoice: (choice) => { if (choice === "pending-sync") void cloudSync?.adoptGuest(); },
+  onMergeComplete: () => cloudSync?.refresh(),
   detectProgress: () => detectLocalProgress({
     profileStore,
     songProjects: songStudioStorage,
@@ -260,6 +273,27 @@ const songStudio = createSongStudioUI({
     };
   },
   onSendToPractice: (skill, options) => openLesson(skill, true, 0, options),
+});
+cloudSync = createCloudSync({
+  auth, profileStore, settingsRepository, songStorage: songStudioStorage,
+  migrationRepository,
+  switchProjectScope: (id) => songStudio.switchAccount(id),
+  onAccountChange: (id) => {
+    if (id !== renderedAccountScope && sessions.getSession()) {
+      sessions.cancelSession();
+      closeLesson();
+    }
+    renderedAccountScope = id;
+    profile = profileStore.profile;
+    Object.assign(practicePrefs, defaultPracticePrefs, settingsRepository.loadPractice());
+    render();
+  },
+  onStatus: () => accountUI.render(),
+});
+auth.subscribe((state) => { void cloudSync.setUser(state.user?.id || null); });
+window.addEventListener("online", () => cloudSync.refresh());
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) cloudSync.refresh();
 });
 function updateTop() {
   $("footer span").textContent = `TUNER · ${tuningLabel(settings.tuning)}`;
@@ -907,6 +941,7 @@ window.addEventListener("pagehide", () => {
   input.disconnect();
   songStudio.dispose();
   auth.dispose();
+  cloudSync.dispose();
 });
 if ("serviceWorker" in navigator)
   window.addEventListener("load", () =>

@@ -269,6 +269,7 @@ export function createAuthService({
       return () => listeners.delete(listener);
     },
     getSession: snapshot,
+    getClient: authenticatedClient,
     getAccessToken,
     signInWithProvider,
     signInWithGoogle: () => signInWithProvider("google"),

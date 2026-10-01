@@ -1,4 +1,4 @@
-const CACHE = "irig-trainer-static-v22";
+const CACHE = "irig-trainer-static-v23";
 const ASSETS = [
   "/",
   "/index.html",
@@ -9,9 +9,12 @@ const ASSETS = [
   "/auth/account-ui.js",
   "/auth/merge-client.js",
   "/auth/merge-popup.js",
+  "/auth/merge-restoration.js",
   "/merge-auth.html",
   "/data/local-repositories.js",
   "/data/migration.js",
+  "/data/cloud-sync.js",
+  "/data/cloud-repositories.js",
   "/vendor/supabase-sdk.js",
   "/audio.js",
   "/curriculum.js",

@@ -13,9 +13,9 @@ export async function detectLocalProgress({
   loadImportedSongs,
 }) {
   const demo = profileStore.loadSaved("demo");
-  const live = profileStore.loadSaved("live");
+  const live = profileStore.loadGuest?.() ?? profileStore.loadSaved("live");
   const [projects, songs] = await Promise.all([
-    songProjects.listProjects().catch(() => []),
+    (songProjects.listGuestProjects?.() || songProjects.listProjects()).catch(() => []),
     loadImportedSongs().catch(() => []),
   ]);
   const sources = {

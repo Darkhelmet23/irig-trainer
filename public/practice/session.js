@@ -385,6 +385,7 @@ export function createSessionController({
             ],
       );
     profile.history.unshift({
+      id: globalThis.crypto?.randomUUID?.() || `session-${finishedAt}-${Math.random().toString(36).slice(2)}`,
       title: s.skill.title,
       lessonId: s.skill.id,
       activityKey: xpReward.activityKey,

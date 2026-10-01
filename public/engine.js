@@ -11,6 +11,7 @@ export function sanitizeProfile(raw) {
   p.xp=Number.isFinite(raw.xp)?Math.max(0,Math.min(1e9,raw.xp)):0;
   p.sessions=Number.isInteger(raw.sessions)?Math.max(0,raw.sessions):0;
   p.history=Array.isArray(raw.history)?raw.history.filter(h=>h&&typeof h.title==='string'&&typeof h.rank==='string'&&Number.isFinite(h.accuracy)).slice(0,200).map(h=>({
+    id:typeof h.id==='string'&&h.id.length<=120?h.id:'',
     title:h.title.slice(0,100),rank:h.rank.slice(0,20),accuracy:Math.max(0,Math.min(100,h.accuracy)),passed:h.passed===true,at:Number.isFinite(h.at)?h.at:0,
     lessonId:typeof h.lessonId==='string'?h.lessonId.slice(0,80):'',activityKey:typeof h.activityKey==='string'?h.activityKey.slice(0,100):'',xpAwarded:Number.isFinite(h.xpAwarded)?Math.max(0,Math.min(1000,h.xpAwarded)):0,
     bpm:Number.isFinite(h.bpm)?h.bpm:0,speed:Number.isFinite(h.speed)?h.speed:1,hits:Number.isFinite(h.hits)?h.hits:0,total:Number.isFinite(h.total)?h.total:0,durationMs:Number.isFinite(h.durationMs)?h.durationMs:0,

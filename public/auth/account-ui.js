@@ -86,6 +86,7 @@ export function accountMarkup({
   methodsError = "",
   online = true,
   merge = null,
+  syncStatus = "local",
 }) {
   const user = state.user;
   const unavailable = !online || state.availability === "offline"
@@ -96,7 +97,9 @@ export function accountMarkup({
         ? "Account sign-in is unavailable right now. Local practice still works."
         : "";
   const head = '<div class="account-head"><div><span class="eyebrow">YOUR SPACE</span>' +
-    '<h2 id="account-title">Account</h2><p>Keep your guitar journey on this device. Sign in when you are ready.</p></div>' +
+    '<h2 id="account-title">Account</h2><p>' + (user
+      ? 'Structured progress saves here and online.'
+      : 'Keep your guitar journey on this device. Sign in when you are ready.') + '</p></div>' +
     '<button class="close-btn" type="button" data-account-action="close" aria-label="Close account">×</button></div>';
   let body;
   if (state.recovery && user) {
@@ -105,8 +108,11 @@ export function accountMarkup({
       '<input name="password" type="password" minlength="8" autocomplete="new-password" required></label>' +
       '<button class="primary" type="submit">Update password</button></form></section>';
   } else if (user) {
+    const syncLabel = { saved: "✓ Saved online", syncing: "↻ Syncing…",
+      offline: "Offline — saved locally", attention: "Sync needs attention" }[syncStatus] || "Saved locally";
     body = '<section class="account-panel account-identity"><span class="eyebrow">SIGNED IN</span>' +
       '<h3>' + escapeHtml(user.displayName) + '</h3><p>' + escapeHtml(user.email) + '</p>' +
+      '<p class="account-note" data-sync-status>' + escapeHtml(syncLabel) + '</p>' +
       (!user.emailVerified && user.providers.includes("email")
         ? '<p class="account-note">Check your inbox to verify your email address.</p>' : '') +
       '<button class="outline-btn" type="button" data-account-action="sign-out">Sign out</button></section>';
@@ -120,15 +126,15 @@ export function accountMarkup({
       if (!decision || showMigrationChoices) {
         body += '<section class="account-panel account-migration"><span class="eyebrow">LOCAL PROGRESS</span>' +
           '<h3>We found practice progress on this device.</h3>' +
-          '<p>Your XP, songs, and projects stay here while you decide how to handle future sync.</p>' +
+          '<p>This device has local progress. Choose whether to add it to this account. Account progress stays separate until you choose.</p>' +
           '<div class="account-choice-list">' +
           '<button type="button" class="outline-btn" data-migration="pending-sync">Sync local progress to my account</button>' +
           '<button type="button" class="outline-btn" data-migration="keep-local">Keep local progress separate</button>' +
           '<button type="button" class="subtle-btn" data-migration="later">Not now</button></div>' +
-          '<p class="tiny muted">Sync is planned for a later release. Choosing it now will not upload or remove anything.</p></section>';
+          '<p class="tiny muted">Imported scores and recordings remain on this device.</p></section>';
       } else {
         const choiceText = decision.choice === "pending-sync"
-          ? "Ready for future sync. Nothing has been uploaded."
+          ? "This device's local progress is being added to your account."
           : decision.choice === "keep-local"
             ? "Your local progress will stay separate."
             : "Your local progress is safe. You can decide later.";
@@ -145,7 +151,7 @@ export function accountMarkup({
       '<button class="primary" type="submit">Send reset link</button></form>' +
       '<button class="subtle-btn" type="button" data-account-action="back">Back to sign in</button></section>';
   } else {
-    body = '<section class="account-panel"><h3>Continue with an account</h3>' +
+    body = '<section class="account-panel"><h3>Continue with an account</h3><p>Sign in to save structured progress online and restore it on another device. Guest practice stays local.</p>' +
       '<div class="account-provider-list">' +
       `<button class="outline-btn" type="button" data-provider="google">${providerIcon("google")}Continue with Google</button>` +
       `<button class="outline-btn" type="button" data-provider="facebook">${providerIcon("facebook")}Continue with Facebook</button>` +
@@ -174,6 +180,9 @@ export function createAccountUI({
   openButton = document.querySelector("#account-open"),
   isOnline = () => navigator.onLine !== false,
   restorationStore = createMergeRestorationStore(),
+  getSyncStatus = () => "local",
+  onMigrationChoice = () => {},
+  onMergeComplete = () => {},
 }) {
   let message = "";
   let view = "sign-in";
@@ -205,6 +214,7 @@ export function createAccountUI({
       methods: state.user?.id === methodsFor ? methods : null, methodsError,
       online: isOnline(),
       merge,
+      syncStatus: getSyncStatus(),
     });
   }
   async function refreshMigration() {
@@ -319,9 +329,10 @@ export function createAccountUI({
         const id = auth.getSession().user?.id;
         if (!id) return;
         decision = migrationRepository.set(id, choice);
+        onMigrationChoice(choice);
         showMigrationChoices = false;
         message = choice === "pending-sync"
-          ? "Ready for future sync. No data was uploaded."
+          ? "Adding this device's local progress to your account."
           : "Your local progress stays on this device.";
         return render();
       }
@@ -336,6 +347,7 @@ export function createAccountUI({
           if (auth.getSession().user?.id !== merge.primaryId)
             throw new Error("The account you kept changed. Start again.");
           const result = await mergeService.merge();
+          onMergeComplete();
           const pending = restorationStore.write(merge.primaryId, result);
           merge = pending ? { step: "restore", primaryId: merge.primaryId, pending } : { step: "done", result };
           await refreshMethods();

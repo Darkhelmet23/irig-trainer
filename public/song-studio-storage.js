@@ -25,7 +25,10 @@ function requestValue(request){
   });
 }
 
-export function createSongStudioStorage({indexedDBRef=globalThis.indexedDB}={}){
+export function createSongStudioStorage({indexedDBRef=globalThis.indexedDB,onProjectSave=()=>{}}={}){
+  let accountId=null;
+  const key=id=>accountId?`account:${accountId}:${id}`:id;
+  const unwrap=value=>value?.project||value;
   const database=()=>openDatabase(indexedDBRef);
   async function transact(storeName,mode,action){
     const db=await database();
@@ -42,18 +45,36 @@ export function createSongStudioStorage({indexedDBRef=globalThis.indexedDB}={}){
   return {
     async listProjects(){
       const values=await transact('projects','readonly',store=>store.getAll());
-      return values.map(value=>deserializeSongProject(value)).sort((a,b)=>b.modifiedAt.localeCompare(a.modifiedAt));
+      return values.filter(value=>accountId?value?.scope===accountId:!value?.scope)
+        .map(value=>deserializeSongProject(unwrap(value))).sort((a,b)=>b.modifiedAt.localeCompare(a.modifiedAt));
     },
+    async listGuestProjects(){const values=await transact('projects','readonly',store=>store.getAll());
+      return values.filter(value=>!value?.scope).map(value=>deserializeSongProject(value));},
     async loadProject(id){
-      const value=await transact('projects','readonly',store=>store.get(id));
-      return value?deserializeSongProject(value):null;
+      const value=await transact('projects','readonly',store=>store.get(key(id)));
+      return value?deserializeSongProject(unwrap(value)):null;
     },
     async saveProject(project){
       const copy=deserializeSongProject(serializeSongProject(project));
-      await transact('projects','readwrite',store=>store.put(copy));
+      await transact('projects','readwrite',store=>store.put(accountId?
+        {id:key(copy.id),scope:accountId,project:copy}:copy));
+      onProjectSave(accountId,copy);
       return copy;
     },
-    async deleteProject(id){await transact('projects','readwrite',store=>store.delete(id));},
+    async deleteProject(id){await transact('projects','readwrite',store=>store.delete(key(id)));},
+    setAccount(id){accountId=typeof id==='string'&&id?id:null;},
+    async adoptGuestProjects(){
+      if(!accountId)return;
+      const targetId=accountId;
+      const guests=await this.listGuestProjects();
+      for(const item of guests){
+        const scopedId=`account:${targetId}:${item.id}`;
+        const existing=await transact('projects','readonly',store=>store.get(scopedId));
+        if(!existing)await transact('projects','readwrite',store=>store.put({
+          id:scopedId,scope:targetId,project:item,
+        }));
+      }
+    },
     async saveRecording(recording){
       await transact('recordings','readwrite',store=>store.put(recording));
       return recording;

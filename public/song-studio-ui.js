@@ -56,7 +56,7 @@ export function createSongStudioUI({storage,tunings=[],onSendToPractice=()=>{},o
       ['recording','Just record an idea','Create a song and capture a local audio take.']
     ];
     const projectCards=projects.map(item=>'<article class="studio-project-card"><button class="studio-project-open" data-project-open="'+htmlEscape(item.id)+'"><span class="eyebrow">'+htmlEscape(item.key)+' · '+Number(item.bpm)+' BPM</span><strong>'+htmlEscape(item.title)+'</strong><small>'+item.sections.length+' sections · edited '+new Date(item.modifiedAt).toLocaleDateString()+'</small></button><div class="studio-project-actions"><button class="subtle-btn" data-project-duplicate="'+htmlEscape(item.id)+'" aria-label="Duplicate '+htmlEscape(item.title)+'">Duplicate</button><button class="subtle-btn danger-text" data-project-delete="'+htmlEscape(item.id)+'" aria-label="Delete '+htmlEscape(item.title)+'">Delete</button></div></article>').join('');
-    return '<div class="song-studio-page"><header class="studio-hero"><div><span class="eyebrow">LEARN · PRACTICE · CREATE</span><h1>Song Studio</h1><p>A blank page for the riff in your head. Ideas stay on this device, and nothing is graded.</p></div><img src="/rifftree-emblem.png" width="64" height="64" alt=""></header><section class="studio-start"><div class="section-heading"><div><span class="eyebrow">START SOMEWHERE</span><h2>Make a little noise.</h2></div></div><div class="studio-start-grid">'+cards.map(card=>'<button class="studio-start-option" data-studio-new="'+card[0]+'"><strong>'+card[1]+'</strong><span>'+card[2]+'</span><i aria-hidden="true">→</i></button>').join('')+'</div></section><section class="studio-project-list"><div class="section-heading"><div><span class="eyebrow">ON THIS DEVICE</span><h2>Your songs</h2></div></div>'+(projectCards||'<p class="studio-empty">Your ideas will appear here. Start with a blank song, a riff, or a quick take.</p>')+'</section><p class="tiny muted studio-local-note">Projects and recordings are stored locally in this browser. No account or upload required.</p></div>';
+    return '<div class="song-studio-page"><header class="studio-hero"><div><span class="eyebrow">LEARN · PRACTICE · CREATE</span><h1>Song Studio</h1><p>A blank page for the riff in your head. Ideas save locally first, and nothing is graded.</p></div><img src="/rifftree-emblem.png" width="64" height="64" alt=""></header><section class="studio-start"><div class="section-heading"><div><span class="eyebrow">START SOMEWHERE</span><h2>Make a little noise.</h2></div></div><div class="studio-start-grid">'+cards.map(card=>'<button class="studio-start-option" data-studio-new="'+card[0]+'"><strong>'+card[1]+'</strong><span>'+card[2]+'</span><i aria-hidden="true">→</i></button>').join('')+'</div></section><section class="studio-project-list"><div class="section-heading"><div><span class="eyebrow">YOUR SONGS</span><h2>Your songs</h2></div></div>'+(projectCards||'<p class="studio-empty">Your ideas will appear here. Start with a blank song, a riff, or a quick take.</p>')+'</section><p class="tiny muted studio-local-note">Signed-in project structure syncs online. Audio recordings stay on this device.</p></div>';
   }
   function renderArrangement(){
     return '<div class="studio-arrangement-strip">'+project.arrangement.map((id,index)=>{
@@ -405,5 +405,13 @@ export function createSongStudioUI({storage,tunings=[],onSendToPractice=()=>{},o
       projects=[...current,...stored.filter(item=>!currentIds.has(item.id))];
     }catch(error){onToast(error.message||'Song Studio storage could not be opened.');}
   }
-  return {renderPage,bind,initialize,onPageExit,flush,dispose:()=>{jam.dispose();capture.stopAll();void flush();}};
+  async function switchAccount(id){
+    if(saveTimer)await flush();
+    else await writeQueue.catch(()=>{});
+    storage.setAccount?.(id);
+    projects=[];project=null;sectionId=null;view='home';
+    await initialize();
+    renderApp();
+  }
+  return {renderPage,bind,initialize,switchAccount,onPageExit,flush,dispose:()=>{jam.dispose();capture.stopAll();void flush();}};
 }
